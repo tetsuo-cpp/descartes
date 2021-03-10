@@ -25,8 +25,10 @@ TEST_CASE("lex identifier with number", "[lexer]") {
 }
 
 TEST_CASE("lex identifier followed by symbol", "[lexer]") {
-  testLexer("foo;",
-            {Token(TokenKind::Identifier, "foo"), Token(TokenKind::SemiColon)});
+  testLexer("foo;", {
+                        Token(TokenKind::Identifier, "foo"),
+                        Token(TokenKind::SemiColon),
+                    });
 }
 
 TEST_CASE("lex number", "[lexer]") {
@@ -38,29 +40,41 @@ TEST_CASE("lex string", "[lexer]") {
 }
 
 TEST_CASE("lex symbols", "[lexer]") {
-  testLexer(".;()",
-            {Token(TokenKind::Period), Token(TokenKind::SemiColon),
-             Token(TokenKind::OpenParen), Token(TokenKind::CloseParen)});
+  testLexer(".;()", {
+                        Token(TokenKind::Period),
+                        Token(TokenKind::SemiColon),
+                        Token(TokenKind::OpenParen),
+                        Token(TokenKind::CloseParen),
+                    });
 }
 
 TEST_CASE("lex compound symbols", "[lexer]") {
-  testLexer("<=>=<>",
-            {Token(TokenKind::LessThanEqual),
-             Token(TokenKind::GreaterThanEqual), Token(TokenKind::NotEqual)});
+  testLexer("<=>=<>", {
+                          Token(TokenKind::LessThanEqual),
+                          Token(TokenKind::GreaterThanEqual),
+                          Token(TokenKind::NotEqual),
+                      });
 }
 
 TEST_CASE("lex mixed symbols", "[lexer]") {
-  testLexer("<;<=<(",
-            {Token(TokenKind::LessThan), Token(TokenKind::SemiColon),
-             Token(TokenKind::LessThanEqual), Token(TokenKind::LessThan),
-             Token(TokenKind::OpenParen)});
+  testLexer("<;<=<(", {
+                          Token(TokenKind::LessThan),
+                          Token(TokenKind::SemiColon),
+                          Token(TokenKind::LessThanEqual),
+                          Token(TokenKind::LessThan),
+                          Token(TokenKind::OpenParen),
+                      });
 }
 
 TEST_CASE("lex keywords", "[lexer]") {
   testLexer("if foo begin end beginning",
-            {Token(TokenKind::If), Token(TokenKind::Identifier, "foo"),
-             Token(TokenKind::Begin), Token(TokenKind::End),
-             Token(TokenKind::Identifier, "beginning")});
+            {
+                Token(TokenKind::If),
+                Token(TokenKind::Identifier, "foo"),
+                Token(TokenKind::Begin),
+                Token(TokenKind::End),
+                Token(TokenKind::Identifier, "beginning"),
+            });
 }
 
 TEST_CASE("lex unknown symbol", "[lexer]") {
