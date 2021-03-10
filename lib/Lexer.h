@@ -16,17 +16,22 @@ enum class TokenKind {
   SemiColon,
   OpenParen,
   CloseParen,
-  Quote,
+  LessThan,
+  LessThanEqual,
+  GreaterThan,
+  GreaterThanEqual,
+  Equal,
+  NotEqual,
   If,
   Eof,
-  None,
 };
 
 struct Token {
-  Token() : kind(TokenKind::None) {}
   explicit Token(TokenKind kind) : kind(kind) {}
   template <typename T>
   Token(TokenKind kind, T &&val) : kind(kind), val(std::forward<T>(val)) {}
+  explicit operator bool() const;
+  bool operator==(const Token &other) const;
   std::string toString() const;
   TokenKind kind;
   std::string val;
@@ -37,10 +42,9 @@ public:
   explicit Lexer(const std::string &source);
   virtual ~Lexer() = default;
   Token lex();
-  bool isDone() const;
-  explicit operator bool() const;
 
 private:
+  bool isDone() const;
   bool readChar();
   void trimWhitespace();
   Token lexIdentifier();
@@ -50,6 +54,14 @@ private:
   const std::string &source;
   size_t index;
   char currentChar;
+};
+
+class LexerError : public std::runtime_error {
+public:
+  template <typename T>
+  explicit LexerError(T &&msg) : std::runtime_error(std::forward<T>(msg)) {}
+  virtual ~LexerError() = default;
+  operator std::string() const { return std::runtime_error::what(); }
 };
 
 } // namespace descartes

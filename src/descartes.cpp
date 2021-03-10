@@ -23,12 +23,16 @@ int main(int argc, char *argv[]) {
   const auto source = descartes::accumulateSource(file);
   descartes::Lexer lexer(source);
   std::vector<descartes::Token> tokens;
-  while (lexer) {
-    auto token = lexer.lex();
+  try {
+    while (auto token = lexer.lex()) {
+      // TODO: Add a flag for this.
 #ifndef NDEBUG
-    std::cout << token.toString() << "\n";
+      std::cout << token.toString() << "\n";
 #endif
-    tokens.push_back(std::move(token));
+      tokens.push_back(std::move(token));
+    }
+  } catch (const descartes::LexerError &lexerError) {
+    std::cerr << lexerError.what() << "\n";
   }
   return 0;
 }
