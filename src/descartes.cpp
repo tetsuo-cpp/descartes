@@ -33,7 +33,9 @@ int main(int argc, char *argv[]) {
       tokens.push_back(std::move(token));
     }
   } catch (const descartes::LexerError &lexerError) {
-    std::cerr << lexerError.what() << "\n";
+    std::cerr << "LEXER: " << lexerError.what() << "\n";
+  } catch (const descartes::ParserError &parserError) {
+    std::cerr << "PARSER: " << parserError.what() << "\n";
   }
   return 0;
 }

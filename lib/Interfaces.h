@@ -95,4 +95,20 @@ public:
   operator std::string() const;
 };
 
+class IAst {};
+
+class IParser {
+public:
+  virtual ~IParser() = default;
+  virtual std::unique_ptr<IAst> parse() = 0;
+};
+
+class ParserError : public std::runtime_error {
+public:
+  template <typename T>
+  explicit ParserError(T &&msg) : std::runtime_error(std::forward<T>(msg)) {}
+  virtual ~ParserError() = default;
+  operator std::string() const;
+};
+
 } // namespace descartes
