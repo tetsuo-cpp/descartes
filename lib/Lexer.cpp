@@ -1,79 +1,8 @@
 #include "Lexer.h"
 
-#include <sstream>
-#include <unordered_map>
+#include <vector>
 
 namespace descartes {
-
-std::string Token::toString() const {
-  std::stringstream ss;
-  ss << "Kind: ";
-  switch (kind) {
-  case TokenKind::Identifier:
-    ss << "Identifier";
-    break;
-  case TokenKind::Number:
-    ss << "Number";
-    break;
-  case TokenKind::String:
-    ss << "String";
-    break;
-  case TokenKind::Program:
-    ss << "Program";
-    break;
-  case TokenKind::Begin:
-    ss << "Begin";
-    break;
-  case TokenKind::End:
-    ss << "End";
-    break;
-  case TokenKind::Period:
-    ss << "Period";
-    break;
-  case TokenKind::SemiColon:
-    ss << "SemiColon";
-    break;
-  case TokenKind::OpenParen:
-    ss << "OpenParen";
-    break;
-  case TokenKind::CloseParen:
-    ss << "CloseParen";
-    break;
-  case TokenKind::LessThan:
-    ss << "LessThan";
-    break;
-  case TokenKind::LessThanEqual:
-    ss << "LessThanEqual";
-    break;
-  case TokenKind::GreaterThan:
-    ss << "GreaterThan";
-    break;
-  case TokenKind::GreaterThanEqual:
-    ss << "GreaterThanEqual";
-    break;
-  case TokenKind::Equal:
-    ss << "Equal";
-    break;
-  case TokenKind::NotEqual:
-    ss << "NotEqual";
-    break;
-  case TokenKind::If:
-    ss << "If";
-    break;
-  case TokenKind::Eof:
-    ss << "Eof";
-    break;
-  }
-  ss << "\n";
-  ss << "Value: " << (val.empty() ? "NONE" : val) << "\n";
-  return ss.str();
-}
-
-Token::operator bool() const { return kind != TokenKind::Eof; }
-
-bool Token::operator==(const Token &other) const {
-  return kind == other.kind && val == other.val;
-}
 
 Lexer::Lexer(const std::string &source) : source(source), index(0) {
   readChar();
@@ -116,10 +45,41 @@ Token Lexer::lexIdentifier() {
     identifier.push_back(std::tolower(currentChar));
   }
   static const std::vector<std::pair<std::string, TokenKind>> keywordMap = {
-      {"program", TokenKind::Program},
+      {"and", TokenKind::And},
+      {"array", TokenKind::Array},
       {"begin", TokenKind::Begin},
+      {"case", TokenKind::Case},
+      {"const", TokenKind::Const},
+      {"div", TokenKind::Div},
+      {"do", TokenKind::Do},
+      {"downto", TokenKind::DownTo},
+      {"else", TokenKind::Else},
       {"end", TokenKind::End},
+      {"file", TokenKind::File},
+      {"for", TokenKind::For},
+      {"function", TokenKind::Function},
+      {"goto", TokenKind::GoTo},
       {"if", TokenKind::If},
+      {"in", TokenKind::In},
+      {"label", TokenKind::Label},
+      {"mod", TokenKind::Mod},
+      {"nil", TokenKind::Nil},
+      {"not", TokenKind::Not},
+      {"of", TokenKind::Of},
+      {"or", TokenKind::Or},
+      {"packed", TokenKind::Packed},
+      {"procedure", TokenKind::Procedure},
+      {"program", TokenKind::Program},
+      {"record", TokenKind::Record},
+      {"repeat", TokenKind::Repeat},
+      {"set", TokenKind::Set},
+      {"then", TokenKind::Then},
+      {"to", TokenKind::To},
+      {"type", TokenKind::Type},
+      {"until", TokenKind::Until},
+      {"var", TokenKind::Var},
+      {"while", TokenKind::While},
+      {"with", TokenKind::With},
   };
   // Check if the identifier is actually a keyword.
   const auto iter = std::find_if(
@@ -161,11 +121,27 @@ Token Lexer::lexString() {
 
 Token Lexer::lexSymbol() {
   static std::vector<std::pair<std::string, TokenKind>> symbolMap = {
-      {".", TokenKind::Period},      {";", TokenKind::SemiColon},
-      {"(", TokenKind::OpenParen},   {")", TokenKind::CloseParen},
-      {"<", TokenKind::LessThan},    {"<=", TokenKind::LessThanEqual},
-      {">", TokenKind::GreaterThan}, {">=", TokenKind::GreaterThanEqual},
-      {"=", TokenKind::Equal},       {"<>", TokenKind::NotEqual},
+      {"+", TokenKind::Add},
+      {"-", TokenKind::Subtract},
+      {"*", TokenKind::Multiply},
+      {"/", TokenKind::Divide},
+      {"=", TokenKind::Equal},
+      {"<", TokenKind::LessThan},
+      {">", TokenKind::GreaterThan},
+      {"[", TokenKind::OpenBracket},
+      {"]", TokenKind::CloseBracket},
+      {".", TokenKind::Period},
+      {",", TokenKind::Comma},
+      {":", TokenKind::Colon},
+      {";", TokenKind::SemiColon},
+      {"^", TokenKind::Hat},
+      {"(", TokenKind::OpenParen},
+      {")", TokenKind::CloseParen},
+      {"<>", TokenKind::NotEqual},
+      {"<=", TokenKind::LessThanEqual},
+      {">=", TokenKind::GreaterThanEqual},
+      {":=", TokenKind::Assign},
+      {"..", TokenKind::DoublePeriod},
   };
   std::string currentSymbol;
   TokenKind kind = TokenKind::Eof;
