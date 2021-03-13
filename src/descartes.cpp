@@ -1,4 +1,6 @@
+#include <AstPrinter.h>
 #include <Lexer.h>
+#include <Parser.h>
 
 #include <fstream>
 #include <iostream>
@@ -23,15 +25,12 @@ int main(int argc, char *argv[]) {
   std::ifstream file(fileName);
   const auto source = descartes::accumulateSource(file);
   descartes::Lexer lexer(source);
-  std::vector<descartes::Token> tokens;
+  descartes::Parser parser(lexer);
   try {
-    while (auto token = lexer.lex()) {
-      // TODO: Add a flag for this.
-#ifndef NDEBUG
-      std::cout << token.toString() << "\n";
-#endif
-      tokens.push_back(std::move(token));
-    }
+    // Print the AST for debugging.
+    auto program = parser.parse();
+    descartes::AstPrinter printer;
+    printer.printAst(*program);
   } catch (const descartes::LexerError &lexerError) {
     std::cerr << "LEXER: " << lexerError.what() << "\n";
   } catch (const descartes::ParserError &parserError) {

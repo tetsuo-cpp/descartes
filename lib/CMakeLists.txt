@@ -1,5 +1,7 @@
 set(
   DESCARTES_LIB_FILES
+  Ast.cpp
+  AstPrinter.cpp
   Interfaces.cpp
   Lexer.cpp
   Parser.cpp

@@ -95,12 +95,18 @@ public:
   operator std::string() const;
 };
 
-class IAst {};
+enum class AstKind;
+class IAst {
+public:
+  virtual ~IAst() = default;
+  virtual AstKind getKind() const = 0;
+};
+using AstPtr = std::unique_ptr<IAst>;
 
 class IParser {
 public:
   virtual ~IParser() = default;
-  virtual std::unique_ptr<IAst> parse() = 0;
+  virtual AstPtr parse() = 0;
 };
 
 class ParserError : public std::runtime_error {
