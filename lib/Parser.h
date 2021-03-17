@@ -2,6 +2,8 @@
 
 #include <Interfaces.h>
 
+#include <vector>
+
 namespace descartes {
 
 class Parser : public IParser {

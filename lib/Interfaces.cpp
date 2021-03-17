@@ -129,6 +129,7 @@ std::string tokenKindToString(TokenKind kind) {
   case TokenKind::Eof:
     return "Eof";
   }
+  return "";
 }
 
 } // namespace

@@ -2,6 +2,8 @@
 
 #include <Ast.h>
 
+#include <cassert>
+
 namespace descartes {
 
 Parser::Parser(ILexer &lexer) : lexer(lexer), currentToken(TokenKind::Eof) {

@@ -1,5 +1,6 @@
 #include "AstPrinter.h"
 
+#include <cassert>
 #include <iostream>
 
 namespace descartes {
