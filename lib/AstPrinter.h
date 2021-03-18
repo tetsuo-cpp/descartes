@@ -2,6 +2,10 @@
 
 #include <Ast.h>
 
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
 namespace descartes {
 
 class AstPrinter {
@@ -10,14 +14,12 @@ public:
   void printAst(IAst &program);
 
 private:
-  void indent();
-  void unindent();
-  void printBlock(Block &block);
-  void printConstDef(ConstDef &constDef);
-  void printStringLiteral(StringLiteral &stringLiteral);
-  void printNumberLiteral(NumberLiteral &numberLiteral);
-  void printVarRef(VariableRef &varRef);
-  std::string padding;
+  json convertNode(IAst &ast);
+  json convertBlock(Block &block);
+  json convertConstDef(ConstDef &constDef);
+  json convertStringLiteral(StringLiteral &stringLiteral);
+  json convertNumberLiteral(NumberLiteral &numberLiteral);
+  json convertVarRef(VariableRef &varRef);
 };
 
 } // namespace descartes
