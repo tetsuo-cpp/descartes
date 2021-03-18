@@ -7,60 +7,67 @@ namespace descartes {
 
 static size_t indentWidth = 4;
 
-void AstPrinter::printAst(IAst &ast) {
-  indent();
+void AstPrinter::printAst(IAst &program) {
+  const auto obj = convertNode(program);
+  std::cout << obj.dump(indentWidth) << "\n";
+}
+
+json AstPrinter::convertNode(IAst &ast) {
   if (auto *block = astCast<Block *>(ast))
-    printBlock(*block);
+    return convertBlock(*block);
   else if (auto *constDef = astCast<ConstDef *>(ast))
-    printConstDef(*constDef);
+    return convertConstDef(*constDef);
   else if (auto *stringLiteral = astCast<StringLiteral *>(ast))
-    printStringLiteral(*stringLiteral);
+    return convertStringLiteral(*stringLiteral);
   else if (auto *numberLiteral = astCast<NumberLiteral *>(ast))
-    printNumberLiteral(*numberLiteral);
+    return convertNumberLiteral(*numberLiteral);
   else if (auto *varRef = astCast<VariableRef *>(ast))
-    printVarRef(*varRef);
+    return convertVarRef(*varRef);
   else
     assert(!"Unknown node in AstPrinter.");
-  unindent();
 }
 
-void AstPrinter::indent() { padding.append(indentWidth, ' '); }
-
-void AstPrinter::unindent() {
-  for (size_t i = 0; i < indentWidth; ++i)
-    padding.pop_back();
-}
-
-void AstPrinter::printBlock(Block &block) {
-  std::cout << padding << "BLOCK\n";
-  std::cout << padding << "labels: ";
+json AstPrinter::convertBlock(Block &block) {
+  json blockObj;
+  blockObj["Type"] = "Block";
+  json labels = json::array();
   for (const auto &label : block.labelDecl)
-    std::cout << label << ", ";
-  std::cout << "\n";
+    labels.emplace_back(label);
+  blockObj["Labels"] = labels;
+  json constDefs = json::array();
   for (auto &constDef : block.constDef)
-    printAst(*constDef);
+    constDefs.emplace_back(convertNode(*constDef));
+  blockObj["ConstDefs"] = constDefs;
+  return blockObj;
 }
 
-void AstPrinter::printConstDef(ConstDef &constDef) {
-  std::cout << padding << "CONST_DEF\n";
-  std::cout << padding << "identifier: " << constDef.identifier << "\n";
-  std::cout << padding << "const_expr:\n";
-  printAst(*constDef.constExpr);
+json AstPrinter::convertConstDef(ConstDef &constDef) {
+  json constDefObj;
+  constDefObj["Type"] = "ConstDef";
+  constDefObj["Identifier"] = constDef.identifier;
+  constDefObj["ConstExpr"] = convertNode(*constDef.constExpr);
+  return constDefObj;
 }
 
-void AstPrinter::printStringLiteral(StringLiteral &stringLiteral) {
-  std::cout << padding << "STRING_LITERAL\n";
-  std::cout << padding << "val: " << stringLiteral.val << "\n";
+json AstPrinter::convertStringLiteral(StringLiteral &stringLiteral) {
+  json stringLiteralObj;
+  stringLiteralObj["Type"] = "StringLiteral";
+  stringLiteralObj["Val"] = stringLiteral.val;
+  return stringLiteralObj;
 }
 
-void AstPrinter::printNumberLiteral(NumberLiteral &numberLiteral) {
-  std::cout << padding << "NUMBER_LITERAL\n";
-  std::cout << padding << "val: " << numberLiteral.val << "\n";
+json AstPrinter::convertNumberLiteral(NumberLiteral &numberLiteral) {
+  json numberLiteralObj;
+  numberLiteralObj["Type"] = "NumberLiteral";
+  numberLiteralObj["Val"] = numberLiteral.val;
+  return numberLiteralObj;
 }
 
-void AstPrinter::printVarRef(VariableRef &varRef) {
-  std::cout << padding << "VAR_REF\n";
-  std::cout << padding << "identifier: " << varRef.identifier << "\n";
+json AstPrinter::convertVarRef(VariableRef &varRef) {
+  json varRefObj;
+  varRefObj["Type"] = "VarRef";
+  varRefObj["Identifier"] = varRef.identifier;
+  return varRefObj;
 }
 
 } // namespace descartes
