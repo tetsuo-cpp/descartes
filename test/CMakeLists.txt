@@ -1,6 +1,7 @@
 set(
   DESCARTES_TEST_FILES
   LexerTest.cpp
+  ParserTest.cpp
   )
 
 add_executable(descartes_test descartes_test.cpp ${DESCARTES_TEST_FILES})

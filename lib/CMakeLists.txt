@@ -5,6 +5,7 @@ set(
   Interfaces.cpp
   Lexer.cpp
   Parser.cpp
+  SymbolTable.cpp
   )
 
 add_library(descartes_lib ${DESCARTES_LIB_FILES})

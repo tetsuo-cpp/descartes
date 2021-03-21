@@ -6,7 +6,7 @@ namespace descartes {
 
 namespace {
 
-std::string tokenKindToString(TokenKind kind) {
+const char *tokenKindToString(TokenKind kind) {
   switch (kind) {
   case TokenKind::Identifier:
     return "Identifier";
@@ -133,6 +133,33 @@ std::string tokenKindToString(TokenKind kind) {
 }
 
 } // namespace
+
+BinaryOpKind tokenKindToBinaryOpKind(TokenKind kind) {
+  switch (kind) {
+  case TokenKind::Add:
+    return BinaryOpKind::Add;
+  case TokenKind::Subtract:
+    return BinaryOpKind::Subtract;
+  case TokenKind::Multiply:
+    return BinaryOpKind::Multiply;
+  case TokenKind::Divide:
+    return BinaryOpKind::Divide;
+  case TokenKind::Equal:
+    return BinaryOpKind::Equal;
+  case TokenKind::LessThan:
+    return BinaryOpKind::LessThan;
+  case TokenKind::GreaterThan:
+    return BinaryOpKind::GreaterThan;
+  case TokenKind::NotEqual:
+    return BinaryOpKind::NotEqual;
+  case TokenKind::LessThanEqual:
+    return BinaryOpKind::LessThanEqual;
+  case TokenKind::GreaterThanEqual:
+    return BinaryOpKind::GreaterThanEqual;
+  default:
+    throw std::runtime_error("Unrecognised op");
+  }
+}
 
 std::string Token::toString() const {
   std::stringstream ss;

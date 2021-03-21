@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
     std::cerr << argParseError.what() << "\n";
     return -1;
   }
-  const std::string fileName = argParser.get<std::string>("file");
+  const auto fileName = argParser.get<std::string>("file");
   const bool printTokens = argParser.get<bool>("--print_tokens");
   const bool printAst = argParser.get<bool>("--print_ast");
   std::ifstream file(fileName);
@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
     auto program = parser.parse();
     if (printAst) {
       descartes::AstPrinter printer;
-      printer.printAst(*program);
+      printer.printBlock(program);
     }
   } catch (const descartes::LexerError &lexerError) {
     std::cerr << "LEXER: " << lexerError.what() << "\n";

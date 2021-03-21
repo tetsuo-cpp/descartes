@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Ast.h>
+
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -72,6 +74,8 @@ enum class TokenKind {
   Eof,
 };
 
+BinaryOpKind tokenKindToBinaryOpKind(TokenKind kind);
+
 struct Token {
   explicit Token(TokenKind kind) : kind(kind) {}
   template <typename T>
@@ -97,18 +101,10 @@ public:
   operator std::string() const;
 };
 
-enum class AstKind;
-class IAst {
-public:
-  virtual ~IAst() = default;
-  virtual AstKind getKind() const = 0;
-};
-using AstPtr = std::unique_ptr<IAst>;
-
 class IParser {
 public:
   virtual ~IParser() = default;
-  virtual AstPtr parse() = 0;
+  virtual Block parse() = 0;
 };
 
 class ParserError : public std::runtime_error {
