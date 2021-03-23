@@ -2,15 +2,24 @@
 
 #include <algorithm>
 #include <cassert>
+#include <iostream>
 #include <vector>
 
 namespace descartes {
 
-Lexer::Lexer(const std::string &source) : source(source), index(0) {
+Lexer::Lexer(const std::string &source, bool printTokens)
+    : source(source), index(0), printTokens(printTokens) {
   readChar();
 }
 
 Token Lexer::lex() {
+  const auto token = lexToken();
+  if (printTokens)
+    std::cout << token.toString() << "\n";
+  return token;
+}
+
+Token Lexer::lexToken() {
   trimWhitespace();
   if (isDone())
     return Token(TokenKind::Eof);

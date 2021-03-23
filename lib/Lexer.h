@@ -8,11 +8,12 @@ namespace descartes {
 
 class Lexer : public ILexer {
 public:
-  explicit Lexer(const std::string &source);
+  explicit Lexer(const std::string &source, bool printTokens);
   virtual ~Lexer() = default;
   Token lex() override;
 
 private:
+  Token lexToken();
   bool isDone() const;
   bool readChar();
   void trimWhitespace();
@@ -23,6 +24,7 @@ private:
   const std::string &source;
   size_t index;
   char currentChar;
+  const bool printTokens;
 };
 
 } // namespace descartes
