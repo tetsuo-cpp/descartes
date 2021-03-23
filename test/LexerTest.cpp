@@ -8,7 +8,7 @@ namespace descartes::test {
 // token mismatch.
 void testLexer(const std::string &source, const std::vector<Token> &expected) {
   std::vector<Token> actual;
-  Lexer lexer(source);
+  Lexer lexer(source, false);
   while (auto token = lexer.lex())
     actual.push_back(std::move(token));
   for (size_t i = 0; i < std::min(expected.size(), actual.size()); ++i)
@@ -78,13 +78,13 @@ TEST_CASE("lex keywords", "[lexer]") {
 }
 
 TEST_CASE("lex unknown symbol", "[lexer]") {
-  Lexer lexer("?");
+  Lexer lexer("?", false);
   REQUIRE_THROWS_MATCHES(lexer.lex(), descartes::LexerError,
                          Catch::Contains("Unknown symbol"));
 }
 
 TEST_CASE("lex mismatched quotes", "[lexer]") {
-  Lexer lexer("'foo");
+  Lexer lexer("'foo", false);
   REQUIRE_THROWS_MATCHES(lexer.lex(), descartes::LexerError,
                          Catch::Contains("Mismatched quotes"));
 }
