@@ -29,8 +29,9 @@ Block::Block(std::vector<Symbol> &&labelDecls,
       functions(std::move(functions)), statements(std::move(statements)) {}
 
 Function::Function(Symbol name, std::vector<std::pair<Symbol, Symbol>> &&args,
-                   Block &&block)
-    : name(name), args(std::move(args)), block(std::move(block)) {}
+                   Block &&block, std::optional<Symbol> returnType)
+    : name(name), args(std::move(args)), block(std::move(block)),
+      returnType(returnType) {}
 
 StringLiteral::StringLiteral(std::string &&val) : val(std::move(val)) {}
 

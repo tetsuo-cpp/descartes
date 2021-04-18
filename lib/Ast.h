@@ -155,10 +155,11 @@ struct Block {
 
 struct Function {
   Function(Symbol name, std::vector<std::pair<Symbol, Symbol>> &&args,
-           Block &&block);
+           Block &&block, std::optional<Symbol> returnType);
   Symbol name;
   std::vector<std::pair<Symbol, Symbol>> args;
   Block block;
+  std::optional<Symbol> returnType;
 };
 
 struct StringLiteral : public Expr {
@@ -282,8 +283,7 @@ inline CallStatement *statementCast<CallStatement *>(Statement &statement) {
   return statementCastImpl<CallStatement *, StatementKind::Call>(statement);
 }
 
-template <>
-inline For *statementCast<For *>(Statement &statement) {
+template <> inline For *statementCast<For *>(Statement &statement) {
   return statementCastImpl<For *, StatementKind::For>(statement);
 }
 

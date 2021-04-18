@@ -73,4 +73,15 @@ TEST_CASE("parse procedure", "[parser]") {
   testParser(program);
 }
 
+TEST_CASE("parse function", "[parser]") {
+  const char *program = "function foo(x : integer) : integer;"
+                        "begin"
+                        "  foo := x "
+                        "end;"
+                        "begin"
+                        "  writeln(foo(1))"
+                        "end.";
+  testParser(program);
+}
+
 } // namespace descartes::test

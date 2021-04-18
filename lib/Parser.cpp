@@ -185,12 +185,13 @@ std::vector<VarDecl> Parser::parseVarDecls() {
 std::vector<std::unique_ptr<Function>> Parser::parseFunctions() {
   std::vector<std::unique_ptr<Function>> functions;
   while (!isDone() && currentToken.kind != TokenKind::Begin) {
-    // TODO: Support functions.
     std::unique_ptr<Function> function;
     if (checkToken(TokenKind::Procedure))
       function = parseProcedure();
+    else if (checkToken(TokenKind::Function))
+      function = parseFunction();
     else
-      expectToken(TokenKind::Function);
+      throw ParserError("Expected either procedure or function");
     functions.push_back(std::move(function));
   }
   return functions;
@@ -203,9 +204,25 @@ std::unique_ptr<Function> Parser::parseProcedure() {
   expectToken(TokenKind::SemiColon);
   auto functionBlock = parseBlock();
   expectToken(TokenKind::SemiColon);
-  return std::make_unique<Function>(symbols.make(procedureName),
-                                    std::move(argsList),
-                                    std::move(functionBlock));
+  // No return type for a procedure.
+  return std::make_unique<Function>(
+      symbols.make(procedureName), std::move(argsList),
+      std::move(functionBlock), std::optional<Symbol>{});
+}
+
+std::unique_ptr<Function> Parser::parseFunction() {
+  const auto functionName = currentToken.val;
+  expectToken(TokenKind::Identifier);
+  auto argsList = parseArgsList();
+  expectToken(TokenKind::Colon);
+  const auto returnType = currentToken.val;
+  expectToken(TokenKind::Identifier);
+  expectToken(TokenKind::SemiColon);
+  auto functionBlock = parseBlock();
+  expectToken(TokenKind::SemiColon);
+  return std::make_unique<Function>(
+      symbols.make(functionName), std::move(argsList), std::move(functionBlock),
+      symbols.make(returnType));
 }
 
 std::vector<std::pair<Symbol, Symbol>> Parser::parseArgsList() {
