@@ -115,6 +115,21 @@ struct If : public Statement {
   StatementPtr thenStatement, elseStatement;
 };
 
+struct CaseArm {
+  CaseArm(ExprPtr value, StatementPtr statement)
+      : value(std::move(value)), statement(std::move(statement)) {}
+  ExprPtr value;
+  StatementPtr statement;
+};
+
+struct Case : public Statement {
+  Case(ExprPtr expr, std::vector<CaseArm> &&arms)
+      : expr(std::move(expr)), arms(std::move(arms)) {}
+  StatementKind getKind() const override;
+  ExprPtr expr;
+  std::vector<CaseArm> arms;
+};
+
 struct While : public Statement {
   While(ExprPtr cond, StatementPtr body);
   StatementKind getKind() const override;
@@ -281,6 +296,10 @@ template <> inline Compound *statementCast<Compound *>(Statement &statement) {
 
 template <> inline If *statementCast<If *>(Statement &statement) {
   return statementCastImpl<If *, StatementKind::If>(statement);
+}
+
+template <> inline Case *statementCast<Case *>(Statement &statement) {
+  return statementCastImpl<Case *, StatementKind::Case>(statement);
 }
 
 template <> inline While *statementCast<While *>(Statement &statement) {
