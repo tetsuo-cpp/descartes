@@ -225,19 +225,20 @@ std::unique_ptr<Function> Parser::parseFunction() {
       symbols.make(returnType));
 }
 
-std::vector<std::pair<Symbol, Symbol>> Parser::parseArgsList() {
-  std::vector<std::pair<Symbol, Symbol>> argsList;
+std::vector<FunctionArg> Parser::parseArgsList() {
+  std::vector<FunctionArg> argsList;
   expectToken(TokenKind::OpenParen);
   while (!isDone() && currentToken.kind != TokenKind::CloseParen) {
-    // TODO: Support const args.
     if (!argsList.empty())
       expectToken(TokenKind::Comma);
+    bool isConst = checkToken(TokenKind::Const);
     const auto argName = currentToken.val;
     expectToken(TokenKind::Identifier);
     expectToken(TokenKind::Colon);
     const auto argType = currentToken.val;
     expectToken(TokenKind::Identifier);
-    argsList.emplace_back(symbols.make(argName), symbols.make(argType));
+    argsList.emplace_back(symbols.make(argName), symbols.make(argType),
+                          isConst);
   }
   expectToken(TokenKind::CloseParen);
   return argsList;

@@ -30,7 +30,7 @@ private:
   std::vector<std::unique_ptr<Function>> parseFunctions();
   std::unique_ptr<Function> parseProcedure();
   std::unique_ptr<Function> parseFunction();
-  std::vector<std::pair<Symbol, Symbol>> parseArgsList();
+  std::vector<FunctionArg> parseArgsList();
   StatementPtr parseStatement();
   ExprPtr parseExpr();
   ExprPtr parseEquality();
