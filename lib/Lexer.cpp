@@ -49,7 +49,7 @@ void Lexer::trimWhitespace() {
 
 Token Lexer::lexIdentifier() {
   assert(std::isalpha(currentChar));
-  std::string identifier{currentChar};
+  std::string identifier{static_cast<char>(std::tolower(currentChar))};
   while (readChar()) {
     if (!std::isalpha(currentChar) && !std::isdigit(currentChar))
       break;
