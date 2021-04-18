@@ -122,12 +122,6 @@ struct While : public Statement {
   StatementPtr body;
 };
 
-struct CallStatement : public Statement {
-  explicit CallStatement(ExprPtr call);
-  StatementKind getKind() const override;
-  ExprPtr call;
-};
-
 struct For : public Statement {
   For(Symbol controlIdentifier, ExprPtr begin, ExprPtr end, bool to,
       StatementPtr body);
@@ -136,6 +130,12 @@ struct For : public Statement {
   ExprPtr begin, end;
   bool to;
   StatementPtr body;
+};
+
+struct CallStatement : public Statement {
+  explicit CallStatement(ExprPtr call);
+  StatementKind getKind() const override;
+  ExprPtr call;
 };
 
 struct Function;
@@ -213,6 +213,8 @@ enum class BinaryOpKind {
   LessThanEqual,
   GreaterThanEqual,
 };
+
+const char *binaryOpKindToString(BinaryOpKind kind);
 
 struct BinaryOp : public Expr {
   BinaryOp(BinaryOpKind kind, ExprPtr lhs, ExprPtr rhs);

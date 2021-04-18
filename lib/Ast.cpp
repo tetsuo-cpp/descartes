@@ -50,6 +50,32 @@ MemberRef::MemberRef(ExprPtr expr, Symbol identifier)
 
 ExprKind MemberRef::getKind() const { return ExprKind::MemberRef; }
 
+const char *binaryOpKindToString(BinaryOpKind kind) {
+  switch (kind) {
+  case BinaryOpKind::Add:
+    return "Add";
+  case BinaryOpKind::Subtract:
+    return "Subtract";
+  case BinaryOpKind::Multiply:
+    return "Multiply";
+  case BinaryOpKind::Divide:
+    return "Divide";
+  case BinaryOpKind::Equal:
+    return "Equal";
+  case BinaryOpKind::LessThan:
+    return "LessThan";
+  case BinaryOpKind::GreaterThan:
+    return "GreaterThan";
+  case BinaryOpKind::NotEqual:
+    return "NotEqual";
+  case BinaryOpKind::LessThanEqual:
+    return "LessThanEqual";
+  case BinaryOpKind::GreaterThanEqual:
+    return "GreaterThanEqual";
+  }
+  return "";
+}
+
 BinaryOp::BinaryOp(BinaryOpKind kind, ExprPtr lhs, ExprPtr rhs)
     : kind(kind), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
 
