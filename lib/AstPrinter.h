@@ -22,6 +22,7 @@ private:
   json convertAssignment(Statement &statement);
   json convertCompound(Statement &statement);
   json convertIf(Statement &statement);
+  json convertCase(Statement &statement);
   json convertWhile(Statement &statement);
   json convertFor(Statement &statement);
   json convertCallStatement(Statement &statement);

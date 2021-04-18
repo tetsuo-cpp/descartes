@@ -101,6 +101,8 @@ If::If(ExprPtr cond, StatementPtr thenStatement, StatementPtr elseStatement)
 
 StatementKind If::getKind() const { return StatementKind::If; }
 
+StatementKind Case::getKind() const { return StatementKind::Case; }
+
 While::While(ExprPtr cond, StatementPtr body)
     : cond(std::move(cond)), body(std::move(body)) {}
 

@@ -89,6 +89,8 @@ json AstPrinter::convertStatement(Statement &statement) {
     return convertCompound(statement);
   case StatementKind::If:
     return convertIf(statement);
+  case StatementKind::Case:
+    return convertCase(statement);
   case StatementKind::While:
     return convertWhile(statement);
   case StatementKind::Call:
@@ -126,6 +128,22 @@ json AstPrinter::convertIf(Statement &statement) {
   if (ifStatement->elseStatement)
     ifObj["Else"] = convertStatement(*ifStatement->elseStatement);
   return ifObj;
+}
+
+json AstPrinter::convertCase(Statement &statement) {
+  auto *caseStatement = statementCast<Case *>(statement);
+  assert(caseStatement);
+  json caseObj;
+  caseObj["Type"] = "Case";
+  caseObj["Expr"] = convertExpr(*caseStatement->expr);
+  json armsObj = json::array();
+  for (const auto &arm : caseStatement->arms) {
+    json armObj;
+    armObj["Value"] = convertExpr(*arm.value);
+    armObj["Statement"] = convertStatement(*arm.statement);
+    armsObj.emplace_back(armObj);
+  }
+  return caseObj;
 }
 
 json AstPrinter::convertWhile(Statement &statement) {

@@ -392,7 +392,20 @@ StatementPtr Parser::parseIf() {
                               std::move(elseStatement));
 }
 
-StatementPtr Parser::parseCase() { return descartes::StatementPtr(); }
+StatementPtr Parser::parseCase() {
+  auto expr = parseExpr();
+  expectToken(TokenKind::Of);
+  std::vector<CaseArm> arms;
+  while (!checkToken(TokenKind::End)) {
+    if (!arms.empty())
+      expectToken(TokenKind::SemiColon);
+    auto value = parseExpr();
+    expectToken(TokenKind::Colon);
+    auto statement = parseStatement();
+    arms.emplace_back(std::move(value), std::move(statement));
+  }
+  return std::make_unique<Case>(std::move(expr), std::move(arms));
+}
 
 StatementPtr Parser::parseRepeat() { return descartes::StatementPtr(); }
 

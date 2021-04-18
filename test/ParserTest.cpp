@@ -94,4 +94,15 @@ TEST_CASE("parse const args", "[parser]") {
   testParser(program);
 }
 
+TEST_CASE("parse case statement", "[parser]") {
+  const char *program = "begin"
+                        "  case x of"
+                        "    1: y := 'one';"
+                        "    2: y := 'two';"
+                        "    3: y := 'three'"
+                        "  end "
+                        "end.";
+  testParser(program);
+}
+
 } // namespace descartes::test
