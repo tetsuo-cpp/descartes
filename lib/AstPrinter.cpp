@@ -174,6 +174,7 @@ json AstPrinter::convertExpr(Expr &expr) {
   case ExprKind::MemberRef:
     return convertMemberRef(expr);
   }
+  return json::object();
 }
 
 json AstPrinter::convertStringLiteral(Expr &expr) {

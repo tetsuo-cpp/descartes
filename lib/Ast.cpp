@@ -73,6 +73,7 @@ const char *binaryOpKindToString(BinaryOpKind kind) {
   case BinaryOpKind::GreaterThanEqual:
     return "GreaterThanEqual";
   }
+  return "";
 }
 
 BinaryOp::BinaryOp(BinaryOpKind kind, ExprPtr lhs, ExprPtr rhs)
