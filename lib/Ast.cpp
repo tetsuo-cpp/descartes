@@ -28,8 +28,8 @@ Block::Block(std::vector<Symbol> &&labelDecls,
       typeDefs(std::move(typeDefs)), varDecls(std::move(varDecls)),
       functions(std::move(functions)), statements(std::move(statements)) {}
 
-Function::Function(Symbol name, std::vector<std::pair<Symbol, Symbol>> &&args,
-                   Block &&block, std::optional<Symbol> returnType)
+Function::Function(Symbol name, std::vector<FunctionArg> &&args, Block &&block,
+                   std::optional<Symbol> returnType)
     : name(name), args(std::move(args)), block(std::move(block)),
       returnType(returnType) {}
 

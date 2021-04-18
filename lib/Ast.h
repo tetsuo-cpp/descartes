@@ -153,11 +153,18 @@ struct Block {
   StatementPtr statements;
 };
 
+struct FunctionArg {
+  FunctionArg(Symbol identifier, Symbol type, bool isConst)
+      : identifier(identifier), type(type), isConst(isConst) {}
+  Symbol identifier, type;
+  bool isConst;
+};
+
 struct Function {
-  Function(Symbol name, std::vector<std::pair<Symbol, Symbol>> &&args,
-           Block &&block, std::optional<Symbol> returnType);
+  Function(Symbol name, std::vector<FunctionArg> &&args, Block &&block,
+           std::optional<Symbol> returnType);
   Symbol name;
-  std::vector<std::pair<Symbol, Symbol>> args;
+  std::vector<FunctionArg> args;
   Block block;
   std::optional<Symbol> returnType;
 };

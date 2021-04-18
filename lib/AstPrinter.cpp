@@ -103,8 +103,9 @@ json AstPrinter::convertFunction(Function &function) {
   auto args = json::array();
   for (const auto &arg : function.args) {
     json argObj;
-    argObj["Name"] = arg.first.getName();
-    argObj["Type"] = arg.second.getName();
+    argObj["Name"] = arg.identifier.getName();
+    argObj["Type"] = arg.type.getName();
+    argObj["IsConst"] = arg.isConst;
     args.emplace_back(argObj);
   }
   functionObj["Args"] = args;

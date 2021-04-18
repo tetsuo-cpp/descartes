@@ -84,4 +84,14 @@ TEST_CASE("parse function", "[parser]") {
   testParser(program);
 }
 
+TEST_CASE("parse const args", "[parser]") {
+  const char *program = "function foo(const x : integer): integer;"
+                        "begin"
+                        "  foo := x "
+                        "end;"
+                        "begin "
+                        "end.";
+  testParser(program);
+}
+
 } // namespace descartes::test
