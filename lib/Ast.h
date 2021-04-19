@@ -154,6 +154,13 @@ struct For : public Statement {
   StatementPtr body;
 };
 
+struct With : public Statement {
+  With(std::vector<Symbol> &&recordIdentifiers, StatementPtr body);
+  StatementKind getKind() const;
+  std::vector<Symbol> recordIdentifiers;
+  StatementPtr body;
+};
+
 struct CallStatement : public Statement {
   explicit CallStatement(ExprPtr call);
   StatementKind getKind() const override;

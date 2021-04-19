@@ -441,7 +441,18 @@ StatementPtr Parser::parseFor() {
                                std::move(body));
 }
 
-StatementPtr Parser::parseWith() { return descartes::StatementPtr(); }
+StatementPtr Parser::parseWith() {
+  std::vector<Symbol> recordIdentifiers;
+  while (!checkToken(TokenKind::Do)) {
+    if (!recordIdentifiers.empty())
+      expectToken(TokenKind::Comma);
+    Symbol recordSym = symbols.make(currentToken.val);
+    expectToken(TokenKind::Identifier);
+    recordIdentifiers.push_back(recordSym);
+  }
+  auto body = parseStatement();
+  return std::make_unique<With>(std::move(recordIdentifiers), std::move(body));
+}
 
 StatementPtr Parser::parseIdentifierStatement() {
   // This will either be an entire function call or the left hand side of an

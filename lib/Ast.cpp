@@ -120,6 +120,11 @@ For::For(Symbol controlIdentifier, ExprPtr begin, ExprPtr end, bool to,
 
 StatementKind For::getKind() const { return StatementKind::For; }
 
+With::With(std::vector<Symbol> &&recordIdentifiers, StatementPtr body)
+    : recordIdentifiers(std::move(recordIdentifiers)), body(std::move(body)) {}
+
+StatementKind With::getKind() const { return StatementKind::With; }
+
 CallStatement::CallStatement(ExprPtr call) : call(std::move(call)) {}
 
 StatementKind CallStatement::getKind() const { return StatementKind::Call; }
