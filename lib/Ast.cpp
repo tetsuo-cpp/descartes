@@ -103,6 +103,11 @@ StatementKind If::getKind() const { return StatementKind::If; }
 
 StatementKind Case::getKind() const { return StatementKind::Case; }
 
+Repeat::Repeat(ExprPtr untilCond, std::vector<StatementPtr> body)
+    : untilCond(std::move(untilCond)), body(std::move(body)) {}
+
+StatementKind Repeat::getKind() const { return StatementKind::Repeat; }
+
 While::While(ExprPtr cond, StatementPtr body)
     : cond(std::move(cond)), body(std::move(body)) {}
 

@@ -407,7 +407,16 @@ StatementPtr Parser::parseCase() {
   return std::make_unique<Case>(std::move(expr), std::move(arms));
 }
 
-StatementPtr Parser::parseRepeat() { return descartes::StatementPtr(); }
+StatementPtr Parser::parseRepeat() {
+  std::vector<StatementPtr> body;
+  while (!checkToken(TokenKind::Until)) {
+    if (checkToken(TokenKind::SemiColon) && checkToken(TokenKind::Until))
+      break;
+    body.push_back(parseStatement());
+  }
+  auto untilCond = parseExpr();
+  return std::make_unique<Repeat>(std::move(untilCond), std::move(body));
+}
 
 StatementPtr Parser::parseWhile() {
   auto cond = parseExpr();
