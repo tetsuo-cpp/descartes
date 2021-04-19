@@ -105,4 +105,14 @@ TEST_CASE("parse case statement", "[parser]") {
   testParser(program);
 }
 
+TEST_CASE("parse repeat-until statement", "[parser]") {
+  const char *program = "begin"
+                        "  repeat"
+                        "    x := x + 1;"
+                        "    y := y + 2"
+                        "  until y <> 10 "
+                        "end.";
+  testParser(program);
+}
+
 } // namespace descartes::test
