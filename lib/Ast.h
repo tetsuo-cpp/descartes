@@ -130,6 +130,13 @@ struct Case : public Statement {
   std::vector<CaseArm> arms;
 };
 
+struct Repeat : public Statement {
+  Repeat(ExprPtr untilCond, std::vector<StatementPtr> body);
+  StatementKind getKind() const;
+  ExprPtr untilCond;
+  std::vector<StatementPtr> body;
+};
+
 struct While : public Statement {
   While(ExprPtr cond, StatementPtr body);
   StatementKind getKind() const override;
@@ -144,6 +151,13 @@ struct For : public Statement {
   Symbol controlIdentifier;
   ExprPtr begin, end;
   bool to;
+  StatementPtr body;
+};
+
+struct With : public Statement {
+  With(std::vector<Symbol> &&recordIdentifiers, StatementPtr body);
+  StatementKind getKind() const;
+  std::vector<Symbol> recordIdentifiers;
   StatementPtr body;
 };
 

@@ -103,6 +103,11 @@ StatementKind If::getKind() const { return StatementKind::If; }
 
 StatementKind Case::getKind() const { return StatementKind::Case; }
 
+Repeat::Repeat(ExprPtr untilCond, std::vector<StatementPtr> body)
+    : untilCond(std::move(untilCond)), body(std::move(body)) {}
+
+StatementKind Repeat::getKind() const { return StatementKind::Repeat; }
+
 While::While(ExprPtr cond, StatementPtr body)
     : cond(std::move(cond)), body(std::move(body)) {}
 
@@ -114,6 +119,11 @@ For::For(Symbol controlIdentifier, ExprPtr begin, ExprPtr end, bool to,
       end(std::move(end)), to(to), body(std::move(body)) {}
 
 StatementKind For::getKind() const { return StatementKind::For; }
+
+With::With(std::vector<Symbol> &&recordIdentifiers, StatementPtr body)
+    : recordIdentifiers(std::move(recordIdentifiers)), body(std::move(body)) {}
+
+StatementKind With::getKind() const { return StatementKind::With; }
 
 CallStatement::CallStatement(ExprPtr call) : call(std::move(call)) {}
 
