@@ -5,6 +5,7 @@ set(
   Interfaces.cpp
   Lexer.cpp
   Parser.cpp
+  Semantic.cpp
   SymbolTable.cpp
   )
 

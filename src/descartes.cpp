@@ -1,6 +1,7 @@
 #include <AstPrinter.h>
 #include <Lexer.h>
 #include <Parser.h>
+#include <Semantic.h>
 
 #include <argparse/argparse.hpp>
 
@@ -45,6 +46,7 @@ int main(int argc, char *argv[]) {
     std::cerr << "Could not open file " << fileName << "\n";
     return -1;
   }
+  // TODO: Extract into driver component.
   const auto source = descartes::accumulateSource(file);
   descartes::Lexer lexer(source, printTokens);
   descartes::Parser parser(lexer);
@@ -55,10 +57,14 @@ int main(int argc, char *argv[]) {
       descartes::AstPrinter printer;
       printer.printBlock(program);
     }
+    descartes::Semantic semantic;
+    semantic.analyse(program);
   } catch (const descartes::LexerError &lexerError) {
     std::cerr << "LEXER: " << lexerError.what() << "\n";
   } catch (const descartes::ParserError &parserError) {
     std::cerr << "PARSER: " << parserError.what() << "\n";
+  } catch (const descartes::SemanticError &semanticError) {
+    std::cerr << "SEMANTIC: " << semanticError.what() << "\n";
   }
   return 0;
 }
