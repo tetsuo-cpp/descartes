@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
       descartes::AstPrinter printer;
       printer.printBlock(program);
     }
-    descartes::Semantic semantic;
+    descartes::Semantic semantic(parser.getSymbols());
     semantic.analyse(program);
   } catch (const descartes::LexerError &lexerError) {
     std::cerr << "LEXER: " << lexerError.what() << "\n";

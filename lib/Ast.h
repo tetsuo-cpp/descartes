@@ -21,30 +21,46 @@ struct SymbolHash {
   }
 };
 
+enum class TypeKind {
+  Integer,
+  Boolean,
+  Enum,
+  Record,
+  Alias,
+};
+
 struct Type {
   virtual ~Type() = default;
+  virtual TypeKind getKind() const = 0;
   bool isPointer = false;
 };
 using TypePtr = std::unique_ptr<Type>;
 
 // TODO: Implement ranged types.
-struct Integer : public Type {};
+struct Integer : public Type {
+  TypeKind getKind() const override { return TypeKind::Integer; }
+};
 
-struct Boolean : public Type {};
+struct Boolean : public Type {
+  TypeKind getKind() const override { return TypeKind::Boolean; }
+};
 
 struct Enum : public Type {
   explicit Enum(std::vector<Symbol> &&enums) : enums(std::move(enums)) {}
+  TypeKind getKind() const override { return TypeKind::Enum; }
   std::vector<Symbol> enums;
 };
 
 struct Record : public Type {
   explicit Record(std::vector<std::pair<Symbol, Symbol>> &&fields)
       : fields(std::move(fields)) {}
+  TypeKind getKind() const override { return TypeKind::Record; }
   std::vector<std::pair<Symbol, Symbol>> fields;
 };
 
 struct Alias : public Type {
   explicit Alias(Symbol typeIdentifier) : typeIdentifier(typeIdentifier) {}
+  TypeKind getKind() const override { return TypeKind::Alias; }
   Symbol typeIdentifier;
 };
 
