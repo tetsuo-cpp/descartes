@@ -151,8 +151,9 @@ bool Semantic::isCompatibleType(const Type *lhs, const Type *rhs) const {
   case TypeKind::Enum:
     return lhs == rhs;
   case TypeKind::Alias:
-    throw SemanticError("Unreachable");
+    break;
   }
+  throw SemanticError("Unreachable");
 }
 
 } // namespace descartes
