@@ -1,8 +1,11 @@
 #include <Semantic.h>
 
+#include <cassert>
+
 namespace descartes {
 
-Semantic::Semantic(const SymbolTable &symbols) : symbols(symbols) {
+Semantic::Semantic(const SymbolTable &symbols)
+    : symbols(symbols), typeDefs(nullptr) {
   static_cast<void>(this->symbols);
 }
 
@@ -21,7 +24,7 @@ void Semantic::analyseConstDefs(const std::vector<ConstDef> &constDefs) {
 }
 
 void Semantic::analyseTypeDefs(const TypeDefs &typeDefs) {
-  static_cast<void>(typeDefs);
+  this->typeDefs = &typeDefs;
 }
 
 void Semantic::analyseVarDecls(const std::vector<VarDecl> &varDecls) {
@@ -81,7 +84,7 @@ void Semantic::analyseIf(Statement &statement) {
   auto *ifStatement = statementCast<If *>(statement);
   assert(ifStatement);
   const auto *condType = analyseExpr(*ifStatement->cond);
-  if (condType->getKind() != TypeKind::Boolean)
+  if (resolveType(condType)->getKind() != TypeKind::Boolean)
     throw SemanticError("If condition must be boolean");
   analyseStatement(*ifStatement->thenStatement);
   if (ifStatement->elseStatement)
@@ -96,7 +99,7 @@ void Semantic::analyseWhile(Statement &statement) {
   auto *whileStatement = statementCast<While *>(statement);
   assert(whileStatement);
   const auto *condType = analyseExpr(*whileStatement->cond);
-  if (condType->getKind() != TypeKind::Boolean)
+  if (resolveType(condType)->getKind() != TypeKind::Boolean)
     throw SemanticError("While condition must be a boolean");
   analyseStatement(*whileStatement->body);
 }
@@ -113,6 +116,19 @@ void Semantic::analyseCallStatement(Statement &statement) {
 const Type *Semantic::analyseExpr(Expr &expr) {
   static_cast<void>(expr);
   return nullptr;
+}
+
+const Type *Semantic::resolveType(const Type *type) {
+  const Type *resolvedType = type;
+  while (resolvedType->getKind() == TypeKind::Alias) {
+    const Symbol typeIdentifier =
+        static_cast<const Alias *>(resolvedType)->typeIdentifier;
+    const auto iter = typeDefs->find(typeIdentifier);
+    if (iter == typeDefs->end())
+      throw SemanticError("Could not resolve type");
+    resolvedType = iter->second.get();
+  }
+  return resolvedType;
 }
 
 } // namespace descartes

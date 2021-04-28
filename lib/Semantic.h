@@ -27,7 +27,9 @@ private:
   void analyseWhile(Statement &statement);
   void analyseCallStatement(Statement &statement);
   const Type *analyseExpr(Expr &expr);
+  const Type *resolveType(const Type *type);
   const SymbolTable &symbols;
+  const TypeDefs *typeDefs;
 };
 
 } // namespace descartes
