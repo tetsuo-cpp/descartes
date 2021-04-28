@@ -27,13 +27,13 @@ void Semantic::analyseTypeDefs(const TypeDefs &typeDefs) {
   this->typeDefs = &typeDefs;
 }
 
-void Semantic::analyseVarDecls(const std::vector<VarDecl> &varDecls) {
-  static_cast<void>(varDecls);
+void Semantic::analyseVarDecls(const VarDecls &varDecls) {
+  this->varDecls = &varDecls;
 }
 
 void Semantic::analyseFunctions(
     const std::vector<std::unique_ptr<Function>> &functions) {
-  static_cast<void>(functions);
+  this->functions = &functions;
 }
 
 void Semantic::analyseStatements(Statement &statement) {
@@ -70,7 +70,13 @@ void Semantic::analyseStatement(Statement &statement) {
 }
 
 void Semantic::analyseAssignment(Statement &statement) {
-  static_cast<void>(statement);
+  // TODO: Handle const.
+  auto *assignment = statementCast<Assignment *>(statement);
+  assert(assignment);
+  const Type *lhs = analyseExpr(*assignment->lhs),
+             *rhs = analyseExpr(*assignment->rhs);
+  if (!isCompatibleType(lhs, rhs))
+    throw SemanticError("Assignment error");
 }
 
 void Semantic::analyseCompound(Statement &statement) {
@@ -118,7 +124,7 @@ const Type *Semantic::analyseExpr(Expr &expr) {
   return nullptr;
 }
 
-const Type *Semantic::resolveType(const Type *type) {
+const Type *Semantic::resolveType(const Type *type) const {
   const Type *resolvedType = type;
   while (resolvedType->getKind() == TypeKind::Alias) {
     const Symbol typeIdentifier =
@@ -129,6 +135,24 @@ const Type *Semantic::resolveType(const Type *type) {
     resolvedType = iter->second.get();
   }
   return resolvedType;
+}
+
+bool Semantic::isCompatibleType(const Type *lhs, const Type *rhs) const {
+  lhs = resolveType(lhs);
+  rhs = resolveType(rhs);
+  // Different resolved kinds are always incompatible.
+  if (lhs->getKind() != rhs->getKind())
+    return false;
+  switch (lhs->getKind()) {
+  case TypeKind::Integer:
+  case TypeKind::Boolean:
+    return true;
+  case TypeKind::Record:
+  case TypeKind::Enum:
+    return lhs == rhs;
+  case TypeKind::Alias:
+    throw SemanticError("Unreachable");
+  }
 }
 
 } // namespace descartes

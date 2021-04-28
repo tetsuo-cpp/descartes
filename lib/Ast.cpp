@@ -16,12 +16,9 @@ bool Symbol::operator==(const Symbol &other) const { return id == other.id; }
 ConstDef::ConstDef(Symbol identifier, ExprPtr constExpr)
     : identifier(identifier), constExpr(std::move(constExpr)) {}
 
-VarDecl::VarDecl(Symbol identifier, Symbol type)
-    : identifier(identifier), type(type) {}
-
 Block::Block(std::vector<Symbol> &&labelDecls,
              std::vector<ConstDef> &&constDefs, TypeDefs &&typeDefs,
-             std::vector<VarDecl> &&varDecls,
+             VarDecls &&varDecls,
              std::vector<std::unique_ptr<Function>> functions,
              StatementPtr statements)
     : labelDecls(std::move(labelDecls)), constDefs(std::move(constDefs)),

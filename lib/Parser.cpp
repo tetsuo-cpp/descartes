@@ -49,7 +49,7 @@ Block Parser::parseBlock() {
   TypeDefs typeDefs;
   if (currentToken.kind == TokenKind::Type)
     typeDefs = parseTypeDefs();
-  std::vector<VarDecl> varDecls;
+  VarDecls varDecls;
   if (currentToken.kind == TokenKind::Var)
     varDecls = parseVarDecls();
   std::vector<std::unique_ptr<Function>> functions;
@@ -166,9 +166,9 @@ TypePtr Parser::parseRecord() {
   return std::make_unique<Record>(std::move(fields));
 }
 
-std::vector<VarDecl> Parser::parseVarDecls() {
+VarDecls Parser::parseVarDecls() {
   expectToken(TokenKind::Var);
-  std::vector<VarDecl> varDecls;
+  VarDecls varDecls;
   while (!isDone() && currentToken.kind != TokenKind::Function &&
          currentToken.kind != TokenKind::Procedure &&
          currentToken.kind != TokenKind::Begin) {
@@ -177,8 +177,7 @@ std::vector<VarDecl> Parser::parseVarDecls() {
     expectToken(TokenKind::Colon);
     auto typeIdentifier = currentToken.val;
     expectToken(TokenKind::Identifier);
-    varDecls.emplace_back(symbols.make(varIdentifier),
-                          symbols.make(typeIdentifier));
+    varDecls.emplace(symbols.make(varIdentifier), symbols.make(typeIdentifier));
     expectToken(TokenKind::SemiColon);
   }
   return varDecls;

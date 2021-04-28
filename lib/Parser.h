@@ -27,7 +27,7 @@ private:
   TypePtr parseType();
   TypePtr parseEnum();
   TypePtr parseRecord();
-  std::vector<VarDecl> parseVarDecls();
+  VarDecls parseVarDecls();
   std::vector<std::unique_ptr<Function>> parseFunctions();
   std::unique_ptr<Function> parseProcedure();
   std::unique_ptr<Function> parseFunction();

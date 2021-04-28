@@ -15,7 +15,7 @@ private:
   void analyseBlock(Block &block);
   void analyseConstDefs(const std::vector<ConstDef> &constDefs);
   void analyseTypeDefs(const TypeDefs &typeDefs);
-  void analyseVarDecls(const std::vector<VarDecl> &varDecls);
+  void analyseVarDecls(const VarDecls &varDecls);
   void
   analyseFunctions(const std::vector<std::unique_ptr<Function>> &functions);
   void analyseStatements(Statement &statement);
@@ -27,9 +27,12 @@ private:
   void analyseWhile(Statement &statement);
   void analyseCallStatement(Statement &statement);
   const Type *analyseExpr(Expr &expr);
-  const Type *resolveType(const Type *type);
+  const Type *resolveType(const Type *type) const;
+  bool isCompatibleType(const Type *lhs, const Type *rhs) const;
   const SymbolTable &symbols;
   const TypeDefs *typeDefs;
+  const VarDecls *varDecls;
+  const std::vector<std::unique_ptr<Function>> *functions;
 };
 
 } // namespace descartes
