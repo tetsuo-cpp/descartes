@@ -137,13 +137,21 @@ const Type *Semantic::analyseExpr(Expr &expr) {
 }
 
 const Type *Semantic::analyseStringLiteral(Expr &expr) {
-  static_cast<void>(expr);
-  return nullptr;
+  auto *stringLiteral = exprCast<StringLiteral *>(expr);
+  assert(stringLiteral);
+  auto iter = typeDefs->find(*symbols.lookup("string"));
+  assert(iter != typeDefs->end() &&
+         iter->second->getKind() == TypeKind::String);
+  return iter->second.get();
 }
 
 const Type *Semantic::analyseNumberLiteral(Expr &expr) {
-  static_cast<void>(expr);
-  return nullptr;
+  auto *numberLiteral = exprCast<NumberLiteral *>(expr);
+  assert(numberLiteral);
+  auto iter = typeDefs->find(*symbols.lookup("integer"));
+  assert(iter != typeDefs->end() &&
+         iter->second->getKind() == TypeKind::Integer);
+  return iter->second.get();
 }
 
 const Type *Semantic::analyseVarRef(Expr &expr) {
@@ -152,7 +160,39 @@ const Type *Semantic::analyseVarRef(Expr &expr) {
 }
 
 const Type *Semantic::analyseBinaryOp(Expr &expr) {
-  static_cast<void>(expr);
+  auto *binaryOp = exprCast<BinaryOp *>(expr);
+  assert(binaryOp);
+  const Type *lhs = analyseExpr(*binaryOp->lhs),
+             *rhs = analyseExpr(*binaryOp->rhs);
+  auto iter = typeDefs->find(*symbols.lookup("boolean"));
+  assert(iter != typeDefs->end());
+  switch (binaryOp->kind) {
+  case BinaryOpKind::Add:
+  case BinaryOpKind::Subtract:
+  case BinaryOpKind::Multiply:
+  case BinaryOpKind::Divide:
+  case BinaryOpKind::LessThan:
+  case BinaryOpKind::GreaterThan:
+  case BinaryOpKind::LessThanEqual:
+  case BinaryOpKind::GreaterThanEqual: {
+    // Must be integers.
+    if (resolveType(lhs)->getKind() != TypeKind::Integer ||
+        resolveType(rhs)->getKind() != TypeKind::Integer)
+      throw SemanticError("Expected integer in binary op");
+    return iter->second.get();
+  }
+  case BinaryOpKind::Equal:
+  case BinaryOpKind::NotEqual:
+    // Can be integers, strings or booleans.
+    const auto lhsKind = resolveType(lhs)->getKind(),
+               rhsKind = resolveType(rhs)->getKind();
+    if (lhsKind != rhsKind)
+      throw SemanticError("Mismatching types in equality");
+    if (lhsKind != TypeKind::Integer && lhsKind != TypeKind::String &&
+        lhsKind != TypeKind::Boolean)
+      throw SemanticError("Expected integer, string or boolean in equality");
+    return iter->second.get();
+  }
   return nullptr;
 }
 
@@ -188,6 +228,7 @@ bool Semantic::isCompatibleType(const Type *lhs, const Type *rhs) const {
   switch (lhs->getKind()) {
   case TypeKind::Integer:
   case TypeKind::Boolean:
+  case TypeKind::String:
     return true;
   case TypeKind::Record:
   case TypeKind::Enum:

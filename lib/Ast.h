@@ -27,6 +27,7 @@ enum class TypeKind {
   Enum,
   Record,
   Alias,
+  String,
 };
 
 struct Type {
@@ -62,6 +63,10 @@ struct Alias : public Type {
   explicit Alias(Symbol typeIdentifier) : typeIdentifier(typeIdentifier) {}
   TypeKind getKind() const override { return TypeKind::Alias; }
   Symbol typeIdentifier;
+};
+
+struct String : public Type {
+  TypeKind getKind() const override { return TypeKind::String; }
 };
 
 enum class ExprKind {

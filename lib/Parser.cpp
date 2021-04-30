@@ -101,6 +101,10 @@ ExprPtr Parser::parseConstExpr() { return parsePrimaryExpr(); }
 TypeDefs Parser::parseTypeDefs() {
   expectToken(TokenKind::Type);
   TypeDefs typeDefs;
+  // Perhaps this should happen during semantic analysis.
+  typeDefs[symbols.make("integer")] = std::make_unique<Integer>();
+  typeDefs[symbols.make("boolean")] = std::make_unique<Boolean>();
+  typeDefs[symbols.make("string")] = std::make_unique<String>();
   while (!isDone() && currentToken.kind != TokenKind::Var &&
          currentToken.kind != TokenKind::Function &&
          currentToken.kind != TokenKind::Procedure &&
@@ -119,14 +123,9 @@ TypePtr Parser::parseType() {
   const bool isPointer = checkToken(TokenKind::Hat);
   const auto typeString = currentToken.val;
   TypePtr type = nullptr;
-  if (checkToken(TokenKind::Identifier)) {
-    if (typeString == "integer")
-      type = std::make_unique<Integer>();
-    else if (typeString == "boolean")
-      type = std::make_unique<Boolean>();
-    else
-      type = std::make_unique<Alias>(symbols.make(typeString));
-  } else if (checkToken(TokenKind::OpenParen))
+  if (checkToken(TokenKind::Identifier))
+    type = std::make_unique<Alias>(symbols.make(typeString));
+  else if (checkToken(TokenKind::OpenParen))
     type = parseEnum();
   else if (checkToken(TokenKind::Record))
     type = parseRecord();
