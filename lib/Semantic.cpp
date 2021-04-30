@@ -134,6 +134,7 @@ const Type *Semantic::analyseExpr(Expr &expr) {
   case ExprKind::MemberRef:
     return analyseMemberRef(expr);
   }
+  return nullptr;
 }
 
 const Type *Semantic::analyseStringLiteral(Expr &expr) {
@@ -155,8 +156,16 @@ const Type *Semantic::analyseNumberLiteral(Expr &expr) {
 }
 
 const Type *Semantic::analyseVarRef(Expr &expr) {
-  static_cast<void>(expr);
-  return nullptr;
+  auto *varRef = exprCast<VarRef *>(expr);
+  assert(varRef);
+  auto iter = varDecls->find(varRef->identifier);
+  if (iter == varDecls->end())
+    throw SemanticError("Referencing unknown variable");
+  Symbol varTypeIdentifier = iter->second;
+  auto typeIter = typeDefs->find(varTypeIdentifier);
+  if (typeIter == typeDefs->end())
+    throw SemanticError("Variable of unknown type");
+  return typeIter->second.get();
 }
 
 const Type *Semantic::analyseBinaryOp(Expr &expr) {
@@ -197,13 +206,58 @@ const Type *Semantic::analyseBinaryOp(Expr &expr) {
 }
 
 const Type *Semantic::analyseCall(Expr &expr) {
-  static_cast<void>(expr);
+  auto *call = exprCast<Call *>(expr);
+  assert(call);
+  // Get function.
+  Function *function = nullptr;
+  for (const auto &f : *functions) {
+    if (call->functionName == f->name) {
+      function = f.get();
+      break;
+    }
+  }
+  if (!function)
+    throw SemanticError("Unknown function");
+  if (function->args.size() != call->args.size())
+    throw SemanticError("Wrong number of args");
+  for (size_t i = 0; i < call->args.size(); ++i) {
+    const Type *providedType = analyseExpr(*call->args[i]);
+    const FunctionArg fArg = function->args[i];
+    auto iter = typeDefs->find(fArg.type);
+    if (iter == typeDefs->end())
+      throw SemanticError("Function takes unknown type");
+    if (!isCompatibleType(resolveType(iter->second.get()),
+                          resolveType(providedType)))
+      throw SemanticError("Gave function wrong type");
+  }
+  if (function->returnType) {
+    auto iter = typeDefs->find(*function->returnType);
+    if (iter == typeDefs->end())
+      throw SemanticError("Unknown return type");
+    return resolveType(iter->second.get());
+  }
   return nullptr;
 }
 
 const Type *Semantic::analyseMemberRef(Expr &expr) {
-  static_cast<void>(expr);
-  return nullptr;
+  auto *memberRef = exprCast<MemberRef *>(expr);
+  assert(memberRef);
+  const Type *exprType = analyseExpr(*memberRef->expr);
+  if (exprType->getKind() != TypeKind::Record)
+    throw SemanticError("Member ref access on non-record type");
+  const Record *recordType = static_cast<const Record *>(exprType);
+  for (const auto &member : recordType->fields) {
+    if (member.first == memberRef->identifier) {
+      // Found the member.
+      auto iter = typeDefs->find(member.second);
+      if (iter == typeDefs->end()) {
+        // Maybe do this eagerly instead of waiting for a member access?
+        throw SemanticError("Member of unknown type");
+      }
+      return resolveType(iter->second.get());
+    }
+  }
+  throw SemanticError("Can't find the right member on the record type");
 }
 
 const Type *Semantic::resolveType(const Type *type) const {
