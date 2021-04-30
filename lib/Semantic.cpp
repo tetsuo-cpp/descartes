@@ -5,9 +5,7 @@
 namespace descartes {
 
 Semantic::Semantic(const SymbolTable &symbols)
-    : symbols(symbols), typeDefs(nullptr) {
-  static_cast<void>(this->symbols);
-}
+    : symbols(symbols), typeDefs(nullptr) {}
 
 void Semantic::analyse(Block &program) { analyseBlock(program); }
 
