@@ -120,6 +120,48 @@ void Semantic::analyseCallStatement(Statement &statement) {
 }
 
 const Type *Semantic::analyseExpr(Expr &expr) {
+  switch (expr.getKind()) {
+  case ExprKind::StringLiteral:
+    return analyseStringLiteral(expr);
+  case ExprKind::NumberLiteral:
+    return analyseNumberLiteral(expr);
+  case ExprKind::VarRef:
+    return analyseVarRef(expr);
+  case ExprKind::BinaryOp:
+    return analyseBinaryOp(expr);
+  case ExprKind::Call:
+    return analyseCall(expr);
+  case ExprKind::MemberRef:
+    return analyseMemberRef(expr);
+  }
+}
+
+const Type *Semantic::analyseStringLiteral(Expr &expr) {
+  static_cast<void>(expr);
+  return nullptr;
+}
+
+const Type *Semantic::analyseNumberLiteral(Expr &expr) {
+  static_cast<void>(expr);
+  return nullptr;
+}
+
+const Type *Semantic::analyseVarRef(Expr &expr) {
+  static_cast<void>(expr);
+  return nullptr;
+}
+
+const Type *Semantic::analyseBinaryOp(Expr &expr) {
+  static_cast<void>(expr);
+  return nullptr;
+}
+
+const Type *Semantic::analyseCall(Expr &expr) {
+  static_cast<void>(expr);
+  return nullptr;
+}
+
+const Type *Semantic::analyseMemberRef(Expr &expr) {
   static_cast<void>(expr);
   return nullptr;
 }

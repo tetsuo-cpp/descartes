@@ -27,6 +27,12 @@ private:
   void analyseWhile(Statement &statement);
   void analyseCallStatement(Statement &statement);
   const Type *analyseExpr(Expr &expr);
+  const Type *analyseStringLiteral(Expr &expr);
+  const Type *analyseNumberLiteral(Expr &expr);
+  const Type *analyseVarRef(Expr &expr);
+  const Type *analyseBinaryOp(Expr &expr);
+  const Type *analyseCall(Expr &expr);
+  const Type *analyseMemberRef(Expr &expr);
   const Type *resolveType(const Type *type) const;
   bool isCompatibleType(const Type *lhs, const Type *rhs) const;
   const SymbolTable &symbols;
