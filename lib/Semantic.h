@@ -18,7 +18,7 @@ private:
   void analyseVarDecls(const VarDecls &varDecls);
   void
   analyseFunctions(const std::vector<std::unique_ptr<Function>> &functions);
-  void analyseStatements(Statement &statement);
+  void analyseBlockStatements(Statement &statement);
   void analyseStatement(Statement &statement);
   void analyseAssignment(Statement &statement);
   void analyseCompound(Statement &statement);

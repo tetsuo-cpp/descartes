@@ -14,7 +14,7 @@ void Semantic::analyseBlock(Block &program) {
   analyseTypeDefs(program.typeDefs);
   analyseVarDecls(program.varDecls);
   analyseFunctions(program.functions);
-  analyseStatements(*program.statements);
+  analyseBlockStatements(*program.statements);
 }
 
 void Semantic::analyseConstDefs(const std::vector<ConstDef> &constDefs) {
@@ -34,7 +34,7 @@ void Semantic::analyseFunctions(
   this->functions = &functions;
 }
 
-void Semantic::analyseStatements(Statement &statement) {
+void Semantic::analyseBlockStatements(Statement &statement) {
   auto *compound = statementCast<Compound *>(statement);
   if (!compound)
     throw SemanticError("Block body must be a compound statement");
