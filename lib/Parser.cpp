@@ -101,7 +101,10 @@ ExprPtr Parser::parseConstExpr() { return parsePrimaryExpr(); }
 TypeDefs Parser::parseTypeDefs() {
   expectToken(TokenKind::Type);
   TypeDefs typeDefs;
-  // Perhaps this should happen during semantic analysis.
+  // This is definitely wrong. Even if there's no `type` section, we need to add
+  // these.
+  //
+  // Maybe this needs to happen during semantic analysis?
   typeDefs[symbols.make("integer")] = std::make_unique<Integer>();
   typeDefs[symbols.make("boolean")] = std::make_unique<Boolean>();
   typeDefs[symbols.make("string")] = std::make_unique<String>();
