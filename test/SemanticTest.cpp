@@ -162,4 +162,48 @@ TEST_CASE("semantic unknown variable", "[semantic]") {
   testSemanticFailure(program, "unknown variable");
 }
 
+TEST_CASE("semantic compatible types 1", "[semantic]") {
+  const char *program = "type"
+                        "  TInteger1 = integer;"
+                        "  TInteger2 = integer;"
+                        "var"
+                        "  int1: TInteger1;"
+                        "  int2: TInteger2;"
+                        "function add(x: TInteger1, y: TInteger2): integer;"
+                        "begin"
+                        "  add := x + y;"
+                        "end;"
+                        "begin"
+                        "  int1 := 1;"
+                        "  int2 := 2;"
+                        "  int1 := add(int1, int2);"
+                        "  int2 := add(int2, int1);"
+                        "end.";
+  testSemanticSuccess(program);
+}
+
+TEST_CASE("semantic compatible types 2", "[semantic]") {
+  const char *program = "type"
+                        "  TPerson = record"
+                        "    name: string;"
+                        "    age: integer;"
+                        "  end;"
+                        "  THuman = TPerson;"
+                        "var"
+                        "  person: TPerson;"
+                        "  human: THuman;"
+                        "procedure humanProc(x: THuman);"
+                        "begin "
+                        "end;"
+                        "begin"
+                        "  person.name := 'Alex';"
+                        "  person.age := 26;"
+                        "  human.name := 'Motoko';"
+                        "  human.age := 56;"
+                        "  humanProc(person);"
+                        "  humanProc(human);"
+                        "end.";
+  testSemanticSuccess(program);
+}
+
 } // namespace descartes::test

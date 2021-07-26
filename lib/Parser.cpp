@@ -350,7 +350,7 @@ ExprPtr Parser::parsePrimaryExpr() {
     if (checkToken(TokenKind::OpenParen)) {
       std::vector<ExprPtr> argList;
       while (!checkToken(TokenKind::CloseParen)) {
-        while (!argList.empty())
+        if (!argList.empty())
           expectToken(TokenKind::Comma);
         argList.push_back(parseExpr());
       }
@@ -459,6 +459,7 @@ StatementPtr Parser::parseIdentifierStatement() {
     auto rhs = parseExpr();
     return std::make_unique<Assignment>(std::move(expr), std::move(rhs));
   }
+  assert(expr->getKind() == ExprKind::Call);
   return std::make_unique<CallStatement>(std::move(expr));
 }
 
