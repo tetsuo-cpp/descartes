@@ -150,6 +150,22 @@ TEST_CASE("semantic recursive call", "[semantic]") {
   testSemanticSuccess(program);
 }
 
+TEST_CASE("semantic mutually recursive calls", "[semantic]") {
+  const char *program = "type "
+                        "procedure foo(x: integer);"
+                        "begin"
+                        "  bar(x)"
+                        "end;"
+                        "procedure bar(x: integer);"
+                        "begin"
+                        "  foo(x)"
+                        "end;"
+                        "begin"
+                        "  foo(10)"
+                        "end.";
+  testSemanticSuccess(program);
+}
+
 TEST_CASE("semantic unknown variable", "[semantic]") {
   const char *program = "begin"
                         "  x := 1"
