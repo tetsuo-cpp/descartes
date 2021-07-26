@@ -158,6 +158,7 @@ void Semantic::analyseIf(Statement &statement) {
 }
 
 void Semantic::analyseCase(Statement &statement) {
+  // TODO: Implement case statements.
   static_cast<void>(statement);
 }
 
