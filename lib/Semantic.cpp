@@ -4,7 +4,10 @@
 
 namespace descartes {
 
-Semantic::Semantic(const SymbolTable &symbols) : symbols(symbols) {}
+// TODO: Remove `const_cast`. Maybe construct the env at the top level and pass
+// it in as an arg?
+Semantic::Semantic(const SymbolTable &symbols)
+    : symbols(symbols), env(const_cast<SymbolTable &>(symbols)) {}
 
 void Semantic::analyse(Block &program) {
   env.enterScope();

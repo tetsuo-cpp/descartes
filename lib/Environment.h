@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Interfaces.h>
+#include <SymbolTable.h>
 
 #include <cassert>
 
@@ -16,7 +17,7 @@ struct FunctionType {
 
 class Environment {
 public:
-  Environment() = default;
+  explicit Environment(SymbolTable &symbols);
   virtual ~Environment() = default;
 
   // TODO: Use a RAII type for this when we begin using exceptions.
@@ -36,6 +37,7 @@ private:
     std::unordered_map<Symbol, const Type *, SymbolHash> resolvedTypes;
   };
   std::vector<Scope> scopes;
+  std::vector<TypePtr> primitiveTypes;
 };
 
 } // namespace descartes

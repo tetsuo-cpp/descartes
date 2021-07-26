@@ -101,13 +101,6 @@ ExprPtr Parser::parseConstExpr() { return parsePrimaryExpr(); }
 std::vector<TypeDef> Parser::parseTypeDefs() {
   expectToken(TokenKind::Type);
   std::vector<TypeDef> typeDefs;
-  // This is definitely wrong. Even if there's no `type` section, we need to add
-  // these.
-  //
-  // Maybe this needs to happen during semantic analysis?
-  typeDefs.emplace_back(symbols.make("integer"), std::make_unique<Integer>());
-  typeDefs.emplace_back(symbols.make("boolean"), std::make_unique<Boolean>());
-  typeDefs.emplace_back(symbols.make("string"), std::make_unique<String>());
   while (!isDone() && currentToken.kind != TokenKind::Var &&
          currentToken.kind != TokenKind::Function &&
          currentToken.kind != TokenKind::Procedure &&

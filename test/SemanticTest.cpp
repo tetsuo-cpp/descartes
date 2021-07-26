@@ -32,10 +32,7 @@ TEST_CASE("semantic hello world", "[semantic]") {
 }
 
 TEST_CASE("semantic integer assignment", "[semantic]") {
-  // FIXME: The `integer` only gets added when parsing a type declaration. We
-  // should eventually be able to remove the `type` when we fix this.
-  const char *program = "type "
-                        "var"
+  const char *program = "var"
                         "  x: integer;"
                         "  y: integer;"
                         "begin"
@@ -46,10 +43,7 @@ TEST_CASE("semantic integer assignment", "[semantic]") {
 }
 
 TEST_CASE("semantic string assignment", "[semantic]") {
-  // FIXME: The `string` only gets added when parsing a type declaration. We
-  // should eventually be able to remove the `type` when we fix this.
-  const char *program = "type "
-                        "var"
+  const char *program = "var"
                         "  x: string;"
                         "  y: string;"
                         "begin"
@@ -75,8 +69,7 @@ TEST_CASE("semantic struct member assignment", "[semantic]") {
 }
 
 TEST_CASE("semantic type error assignment 1", "[semantic]") {
-  const char *program = "type "
-                        "var"
+  const char *program = "var"
                         "  x: integer;"
                         "begin"
                         "  x := 'foo'"
@@ -85,8 +78,7 @@ TEST_CASE("semantic type error assignment 1", "[semantic]") {
 }
 
 TEST_CASE("semantic type error assignment 2", "[semantic]") {
-  const char *program = "type "
-                        "var"
+  const char *program = "var"
                         "  x: string;"
                         "begin"
                         "  x := 1"
@@ -95,8 +87,7 @@ TEST_CASE("semantic type error assignment 2", "[semantic]") {
 }
 
 TEST_CASE("semantic type error argument 1", "[semantic]") {
-  const char *program = "type "
-                        "var"
+  const char *program = "var"
                         "  x: string;"
                         "procedure integerProcedure(x: integer);"
                         "begin "
@@ -134,8 +125,7 @@ TEST_CASE("semantic unknown function", "[semantic]") {
 }
 
 TEST_CASE("semantic recursive call", "[semantic]") {
-  const char *program = "type "
-                        "function fib(x: integer): integer;"
+  const char *program = "function fib(x: integer): integer;"
                         "begin"
                         "  if x = 0 then"
                         "    fib := 0"
@@ -151,8 +141,7 @@ TEST_CASE("semantic recursive call", "[semantic]") {
 }
 
 TEST_CASE("semantic mutually recursive calls", "[semantic]") {
-  const char *program = "type "
-                        "procedure foo(x: integer);"
+  const char *program = "procedure foo(x: integer);"
                         "begin"
                         "  bar(x)"
                         "end;"

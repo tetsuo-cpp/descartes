@@ -7,6 +7,20 @@ FunctionType::FunctionType(const Function *function, const Type *returnType,
     : function(function), returnType(returnType),
       argTypes(std::move(argTypes)) {}
 
+Environment::Environment(SymbolTable &symbols) {
+  // Define primitive types.
+  enterScope();
+  auto integerType = std::make_unique<Integer>();
+  setResolvedType(symbols.make("integer"), integerType.get());
+  primitiveTypes.push_back(std::move(integerType));
+  auto booleanType = std::make_unique<Boolean>();
+  setResolvedType(symbols.make("boolean"), booleanType.get());
+  primitiveTypes.push_back(std::move(booleanType));
+  auto stringType = std::make_unique<String>();
+  setResolvedType(symbols.make("string"), stringType.get());
+  primitiveTypes.push_back(std::move(stringType));
+}
+
 void Environment::enterScope() { scopes.emplace_back(); }
 
 void Environment::exitScope() {
