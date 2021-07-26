@@ -25,7 +25,9 @@ json AstPrinter::convertBlock(Block &block) {
   for (auto &constDef : block.constDefs)
     constDefs.emplace_back(convertConstDef(constDef));
   blockObj["ConstDefs"] = constDefs;
-  json typeDefs = convertTypeDefs(block.typeDefs);
+  json typeDefs = json::array();
+  for (auto &typeDef : block.typeDefs)
+    typeDefs.emplace_back(convertTypeDef(typeDef));
   blockObj["TypeDefs"] = typeDefs;
   json varDecls = json::array();
   for (auto &varDecl : block.varDecls)
@@ -46,15 +48,12 @@ json AstPrinter::convertConstDef(ConstDef &constDef) {
   return constDefObj;
 }
 
-json AstPrinter::convertTypeDefs(TypeDefs &typeDefs) {
-  json typeDefsObj = json::array();
-  for (const auto &typeDef : typeDefs) {
-    json typeDefObj;
-    typeDefObj["Type"] = "TypeDef";
-    typeDefObj["Identifier"] = typeDef.first.getName();
-    typeDefsObj.emplace_back(typeDefObj);
-  }
-  return typeDefsObj;
+json AstPrinter::convertTypeDef(TypeDef &typeDef) {
+  json typeDefObj;
+  // TODO: Print types.
+  typeDefObj["Type"] = "TypeDef";
+  typeDefObj["Identifier"] = typeDef.identifier.getName();
+  return typeDefObj;
 }
 
 json AstPrinter::convertVarDecl(VarDecl &varDecl) {

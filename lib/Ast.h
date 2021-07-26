@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -21,31 +22,52 @@ struct SymbolHash {
   }
 };
 
+enum class TypeKind {
+  Integer,
+  Boolean,
+  Enum,
+  Record,
+  Alias,
+  String,
+};
+
 struct Type {
   virtual ~Type() = default;
+  virtual TypeKind getKind() const = 0;
   bool isPointer = false;
 };
 using TypePtr = std::unique_ptr<Type>;
 
 // TODO: Implement ranged types.
-struct Integer : public Type {};
+struct Integer : public Type {
+  TypeKind getKind() const override { return TypeKind::Integer; }
+};
 
-struct Boolean : public Type {};
+struct Boolean : public Type {
+  TypeKind getKind() const override { return TypeKind::Boolean; }
+};
 
 struct Enum : public Type {
   explicit Enum(std::vector<Symbol> &&enums) : enums(std::move(enums)) {}
+  TypeKind getKind() const override { return TypeKind::Enum; }
   std::vector<Symbol> enums;
 };
 
 struct Record : public Type {
   explicit Record(std::vector<std::pair<Symbol, Symbol>> &&fields)
       : fields(std::move(fields)) {}
+  TypeKind getKind() const override { return TypeKind::Record; }
   std::vector<std::pair<Symbol, Symbol>> fields;
 };
 
 struct Alias : public Type {
   explicit Alias(Symbol typeIdentifier) : typeIdentifier(typeIdentifier) {}
+  TypeKind getKind() const override { return TypeKind::Alias; }
   Symbol typeIdentifier;
+};
+
+struct String : public Type {
+  TypeKind getKind() const override { return TypeKind::String; }
 };
 
 enum class ExprKind {
@@ -70,7 +92,11 @@ struct ConstDef {
   ExprPtr constExpr;
 };
 
-using TypeDefs = std::unordered_map<Symbol, TypePtr, SymbolHash>;
+struct TypeDef {
+  TypeDef(Symbol identifier, TypePtr type);
+  Symbol identifier;
+  TypePtr type;
+};
 
 struct VarDecl {
   VarDecl(Symbol identifier, Symbol type);
@@ -171,12 +197,12 @@ struct Function;
 
 struct Block {
   Block(std::vector<Symbol> &&labelDecls, std::vector<ConstDef> &&constDefs,
-        TypeDefs &&typeDefs, std::vector<VarDecl> &&varDecls,
+        std::vector<TypeDef> &&typeDefs, std::vector<VarDecl> &&varDecls,
         std::vector<std::unique_ptr<Function>> functions,
         StatementPtr statements);
   std::vector<Symbol> labelDecls;
   std::vector<ConstDef> constDefs;
-  TypeDefs typeDefs;
+  std::vector<TypeDef> typeDefs;
   std::vector<VarDecl> varDecls;
   std::vector<std::unique_ptr<Function>> functions;
   StatementPtr statements;

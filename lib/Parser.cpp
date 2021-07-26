@@ -16,6 +16,8 @@ Block Parser::parse() {
   return programBlock;
 }
 
+const SymbolTable &Parser::getSymbols() const { return symbols; }
+
 void Parser::readToken() { currentToken = lexer.lex(); }
 
 bool Parser::isDone() const { return !static_cast<bool>(currentToken); }
@@ -44,7 +46,7 @@ Block Parser::parseBlock() {
   std::vector<ConstDef> constDefs;
   if (currentToken.kind == TokenKind::Const)
     constDefs = parseConstDefs();
-  TypeDefs typeDefs;
+  std::vector<TypeDef> typeDefs;
   if (currentToken.kind == TokenKind::Type)
     typeDefs = parseTypeDefs();
   std::vector<VarDecl> varDecls;
@@ -96,9 +98,9 @@ std::vector<ConstDef> Parser::parseConstDefs() {
 
 ExprPtr Parser::parseConstExpr() { return parsePrimaryExpr(); }
 
-TypeDefs Parser::parseTypeDefs() {
+std::vector<TypeDef> Parser::parseTypeDefs() {
   expectToken(TokenKind::Type);
-  TypeDefs typeDefs;
+  std::vector<TypeDef> typeDefs;
   while (!isDone() && currentToken.kind != TokenKind::Var &&
          currentToken.kind != TokenKind::Function &&
          currentToken.kind != TokenKind::Procedure &&
@@ -108,7 +110,7 @@ TypeDefs Parser::parseTypeDefs() {
     expectToken(TokenKind::Equal);
     auto type = parseType();
     expectToken(TokenKind::SemiColon);
-    typeDefs.emplace(symbols.make(typeIdentifier), std::move(type));
+    typeDefs.emplace_back(symbols.make(typeIdentifier), std::move(type));
   }
   return typeDefs;
 }
@@ -117,14 +119,9 @@ TypePtr Parser::parseType() {
   const bool isPointer = checkToken(TokenKind::Hat);
   const auto typeString = currentToken.val;
   TypePtr type = nullptr;
-  if (checkToken(TokenKind::Identifier)) {
-    if (typeString == "integer")
-      type = std::make_unique<Integer>();
-    else if (typeString == "boolean")
-      type = std::make_unique<Boolean>();
-    else
-      type = std::make_unique<Alias>(symbols.make(typeString));
-  } else if (checkToken(TokenKind::OpenParen))
+  if (checkToken(TokenKind::Identifier))
+    type = std::make_unique<Alias>(symbols.make(typeString));
+  else if (checkToken(TokenKind::OpenParen))
     type = parseEnum();
   else if (checkToken(TokenKind::Record))
     type = parseRecord();
@@ -353,7 +350,7 @@ ExprPtr Parser::parsePrimaryExpr() {
     if (checkToken(TokenKind::OpenParen)) {
       std::vector<ExprPtr> argList;
       while (!checkToken(TokenKind::CloseParen)) {
-        while (!argList.empty())
+        if (!argList.empty())
           expectToken(TokenKind::Comma);
         argList.push_back(parseExpr());
       }
@@ -462,6 +459,7 @@ StatementPtr Parser::parseIdentifierStatement() {
     auto rhs = parseExpr();
     return std::make_unique<Assignment>(std::move(expr), std::move(rhs));
   }
+  assert(expr->getKind() == ExprKind::Call);
   return std::make_unique<CallStatement>(std::move(expr));
 }
 

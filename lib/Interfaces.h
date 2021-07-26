@@ -115,4 +115,12 @@ public:
   operator std::string() const;
 };
 
+class SemanticError : public std::runtime_error {
+public:
+  template <typename T>
+  explicit SemanticError(T &&msg) : std::runtime_error(std::forward<T>(msg)) {}
+  virtual ~SemanticError() = default;
+  operator std::string() const;
+};
+
 } // namespace descartes

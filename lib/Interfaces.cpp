@@ -178,4 +178,8 @@ LexerError::operator std::string() const { return std::runtime_error::what(); }
 
 ParserError::operator std::string() const { return std::runtime_error::what(); }
 
+SemanticError::operator std::string() const {
+  return std::runtime_error::what();
+}
+
 } // namespace descartes

@@ -12,6 +12,7 @@ public:
   explicit Parser(ILexer &lexer);
   virtual ~Parser() = default;
   Block parse() override;
+  const SymbolTable &getSymbols() const;
 
 private:
   void readToken();
@@ -22,7 +23,7 @@ private:
   std::vector<Symbol> parseLabelDecls();
   std::vector<ConstDef> parseConstDefs();
   ExprPtr parseConstExpr();
-  TypeDefs parseTypeDefs();
+  std::vector<TypeDef> parseTypeDefs();
   TypePtr parseType();
   TypePtr parseEnum();
   TypePtr parseRecord();
