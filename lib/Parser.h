@@ -23,11 +23,11 @@ private:
   std::vector<Symbol> parseLabelDecls();
   std::vector<ConstDef> parseConstDefs();
   ExprPtr parseConstExpr();
-  TypeDefs parseTypeDefs();
+  std::vector<TypeDef> parseTypeDefs();
   TypePtr parseType();
   TypePtr parseEnum();
   TypePtr parseRecord();
-  VarDecls parseVarDecls();
+  std::vector<VarDecl> parseVarDecls();
   std::vector<std::unique_ptr<Function>> parseFunctions();
   std::unique_ptr<Function> parseProcedure();
   std::unique_ptr<Function> parseFunction();

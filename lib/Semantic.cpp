@@ -4,10 +4,13 @@
 
 namespace descartes {
 
-Semantic::Semantic(const SymbolTable &symbols)
-    : symbols(symbols), typeDefs(nullptr) {}
+Semantic::Semantic(const SymbolTable &symbols) : symbols(symbols) {}
 
-void Semantic::analyse(Block &program) { analyseBlock(program); }
+void Semantic::analyse(Block &program) {
+  env.enterScope();
+  analyseBlock(program);
+  env.exitScope();
+}
 
 void Semantic::analyseBlock(Block &program) {
   analyseConstDefs(program.constDefs);
@@ -18,20 +21,79 @@ void Semantic::analyseBlock(Block &program) {
 }
 
 void Semantic::analyseConstDefs(const std::vector<ConstDef> &constDefs) {
-  static_cast<void>(constDefs);
+  for (const auto &cd : constDefs) {
+    const Type *exprType = analyseExpr(*cd.constExpr);
+    if (!env.setVarType(cd.identifier, exprType))
+      throw SemanticError("Const already defined");
+  }
 }
 
-void Semantic::analyseTypeDefs(const TypeDefs &typeDefs) {
-  this->typeDefs = &typeDefs;
+void Semantic::analyseTypeDefs(const std::vector<TypeDef> &typeDefs) {
+  for (const auto &td : typeDefs) {
+    const Type *resolvedType = td.type.get();
+    if (resolvedType->getKind() == TypeKind::Alias) {
+      const Symbol aliasIdentifier =
+          static_cast<const Alias *>(resolvedType)->typeIdentifier;
+      resolvedType = env.getResolvedType(aliasIdentifier);
+    }
+    if (!resolvedType)
+      throw SemanticError("Could not resolve type");
+    if (!env.setResolvedType(td.identifier, resolvedType))
+      throw SemanticError("Type already defined");
+  }
 }
 
-void Semantic::analyseVarDecls(const VarDecls &varDecls) {
-  this->varDecls = &varDecls;
+void Semantic::analyseVarDecls(const std::vector<VarDecl> &varDecls) {
+  for (const auto &vd : varDecls) {
+    const Type *varType = env.getResolvedType(vd.type);
+    if (!varType)
+      throw SemanticError("Could not find type of variable");
+    if (!env.setVarType(vd.identifier, varType))
+      throw SemanticError("Variable already defined");
+  }
 }
 
 void Semantic::analyseFunctions(
     const std::vector<std::unique_ptr<Function>> &functions) {
-  this->functions = &functions;
+  // First capture the function signatures.
+  for (const auto &f : functions) {
+    // Resolve the types associated with this function.
+    const Type *returnType = nullptr;
+    if (f->returnType) {
+      returnType = env.getResolvedType(*f->returnType);
+      if (!returnType)
+        throw SemanticError("Could not resolve return type");
+    }
+    std::vector<const Type *> argTypes;
+    for (const auto &arg : f->args) {
+      const Type *argType = env.getResolvedType(arg.type);
+      if (!argType)
+        throw SemanticError("Could not resolve type of argument");
+      argTypes.push_back(argType);
+    }
+    // Set the function type so outer callers can use it.
+    FunctionType functionType(f.get(), returnType, std::move(argTypes));
+    env.setFunctionType(f->name, std::move(functionType));
+  }
+  // Now analyse each function block.
+  for (const auto &f : functions) {
+    env.enterScope();
+    const FunctionType *functionType = env.getFunctionType(f->name);
+    if (functionType->returnType)
+      // Is this the right spot here? In Pascal, functions have a variable with
+      // the same name as the function itself that is used to capture the return
+      // value.
+      if (!env.setVarType(f->name, functionType->returnType))
+        throw SemanticError("Return value already defined");
+    // Register each param as a variable.
+    for (size_t i = 0; i < f->args.size(); ++i)
+      if (!env.setVarType(f->args.at(i).identifier,
+                          functionType->argTypes.at(i)))
+        throw SemanticError("Argument already defined");
+    // Now semantically analyse the associated nested functions and blocks.
+    analyseBlock(f->block);
+    env.exitScope();
+  }
 }
 
 void Semantic::analyseBlockStatements(Statement &statement) {
@@ -88,7 +150,7 @@ void Semantic::analyseIf(Statement &statement) {
   auto *ifStatement = statementCast<If *>(statement);
   assert(ifStatement);
   const auto *condType = analyseExpr(*ifStatement->cond);
-  if (resolveType(condType)->getKind() != TypeKind::Boolean)
+  if (condType->getKind() != TypeKind::Boolean)
     throw SemanticError("If condition must be boolean");
   analyseStatement(*ifStatement->thenStatement);
   if (ifStatement->elseStatement)
@@ -103,7 +165,7 @@ void Semantic::analyseWhile(Statement &statement) {
   auto *whileStatement = statementCast<While *>(statement);
   assert(whileStatement);
   const auto *condType = analyseExpr(*whileStatement->cond);
-  if (resolveType(condType)->getKind() != TypeKind::Boolean)
+  if (condType->getKind() != TypeKind::Boolean)
     throw SemanticError("While condition must be a boolean");
   analyseStatement(*whileStatement->body);
 }
@@ -138,32 +200,26 @@ const Type *Semantic::analyseExpr(Expr &expr) {
 const Type *Semantic::analyseStringLiteral(Expr &expr) {
   auto *stringLiteral = exprCast<StringLiteral *>(expr);
   assert(stringLiteral);
-  auto iter = typeDefs->find(*symbols.lookup("string"));
-  assert(iter != typeDefs->end() &&
-         iter->second->getKind() == TypeKind::String);
-  return iter->second.get();
+  const auto *stringType = env.getResolvedType(*symbols.lookup("string"));
+  assert(stringType && stringType->getKind() == TypeKind::String);
+  return stringType;
 }
 
 const Type *Semantic::analyseNumberLiteral(Expr &expr) {
   auto *numberLiteral = exprCast<NumberLiteral *>(expr);
   assert(numberLiteral);
-  auto iter = typeDefs->find(*symbols.lookup("integer"));
-  assert(iter != typeDefs->end() &&
-         iter->second->getKind() == TypeKind::Integer);
-  return iter->second.get();
+  const auto *numberType = env.getResolvedType(*symbols.lookup("integer"));
+  assert(numberType && numberType->getKind() == TypeKind::Integer);
+  return numberType;
 }
 
 const Type *Semantic::analyseVarRef(Expr &expr) {
   auto *varRef = exprCast<VarRef *>(expr);
   assert(varRef);
-  auto iter = varDecls->find(varRef->identifier);
-  if (iter == varDecls->end())
+  const auto *varType = env.getVarType(varRef->identifier);
+  if (!varType)
     throw SemanticError("Referencing unknown variable");
-  Symbol varTypeIdentifier = iter->second;
-  auto typeIter = typeDefs->find(varTypeIdentifier);
-  if (typeIter == typeDefs->end())
-    throw SemanticError("Variable of unknown type");
-  return typeIter->second.get();
+  return varType;
 }
 
 const Type *Semantic::analyseBinaryOp(Expr &expr) {
@@ -171,34 +227,39 @@ const Type *Semantic::analyseBinaryOp(Expr &expr) {
   assert(binaryOp);
   const Type *lhs = analyseExpr(*binaryOp->lhs),
              *rhs = analyseExpr(*binaryOp->rhs);
-  auto iter = typeDefs->find(*symbols.lookup("boolean"));
-  assert(iter != typeDefs->end());
+  const Type *integerType = env.getResolvedType(*symbols.lookup("integer"));
+  const Type *boolType = env.getResolvedType(*symbols.lookup("boolean"));
   switch (binaryOp->kind) {
   case BinaryOpKind::Add:
   case BinaryOpKind::Subtract:
   case BinaryOpKind::Multiply:
-  case BinaryOpKind::Divide:
+  case BinaryOpKind::Divide: {
+    // Must be integers.
+    if (lhs->getKind() != TypeKind::Integer ||
+        rhs->getKind() != TypeKind::Integer)
+      throw SemanticError("Expected integer in binary op");
+    return integerType;
+  }
   case BinaryOpKind::LessThan:
   case BinaryOpKind::GreaterThan:
   case BinaryOpKind::LessThanEqual:
   case BinaryOpKind::GreaterThanEqual: {
     // Must be integers.
-    if (resolveType(lhs)->getKind() != TypeKind::Integer ||
-        resolveType(rhs)->getKind() != TypeKind::Integer)
+    if (lhs->getKind() != TypeKind::Integer ||
+        rhs->getKind() != TypeKind::Integer)
       throw SemanticError("Expected integer in binary op");
-    return iter->second.get();
+    return boolType;
   }
   case BinaryOpKind::Equal:
   case BinaryOpKind::NotEqual:
     // Can be integers, strings or booleans.
-    const auto lhsKind = resolveType(lhs)->getKind(),
-               rhsKind = resolveType(rhs)->getKind();
+    const auto lhsKind = lhs->getKind(), rhsKind = rhs->getKind();
     if (lhsKind != rhsKind)
       throw SemanticError("Mismatching types in equality");
     if (lhsKind != TypeKind::Integer && lhsKind != TypeKind::String &&
         lhsKind != TypeKind::Boolean)
       throw SemanticError("Expected integer, string or boolean in equality");
-    return iter->second.get();
+    return boolType;
   }
   return nullptr;
 }
@@ -207,34 +268,19 @@ const Type *Semantic::analyseCall(Expr &expr) {
   auto *call = exprCast<Call *>(expr);
   assert(call);
   // Get function.
-  Function *function = nullptr;
-  for (const auto &f : *functions) {
-    if (call->functionName == f->name) {
-      function = f.get();
-      break;
-    }
-  }
+  const FunctionType *function = env.getFunctionType(call->functionName);
   if (!function)
     throw SemanticError("Unknown function");
-  if (function->args.size() != call->args.size())
+  if (function->argTypes.size() != call->args.size())
     throw SemanticError("Wrong number of args");
   for (size_t i = 0; i < call->args.size(); ++i) {
     const Type *providedType = analyseExpr(*call->args[i]);
-    const FunctionArg fArg = function->args[i];
-    auto iter = typeDefs->find(fArg.type);
-    if (iter == typeDefs->end())
-      throw SemanticError("Function takes unknown type");
-    if (!isCompatibleType(resolveType(iter->second.get()),
-                          resolveType(providedType)))
+    const Type *fArg = function->argTypes[i];
+    if (!isCompatibleType(fArg, providedType))
       throw SemanticError("Gave function wrong type");
   }
-  if (function->returnType) {
-    auto iter = typeDefs->find(*function->returnType);
-    if (iter == typeDefs->end())
-      throw SemanticError("Unknown return type");
-    return resolveType(iter->second.get());
-  }
-  return nullptr;
+  // Nullptr is fine.
+  return function->returnType;
 }
 
 const Type *Semantic::analyseMemberRef(Expr &expr) {
@@ -247,33 +293,17 @@ const Type *Semantic::analyseMemberRef(Expr &expr) {
   for (const auto &member : recordType->fields) {
     if (member.first == memberRef->identifier) {
       // Found the member.
-      auto iter = typeDefs->find(member.second);
-      if (iter == typeDefs->end()) {
+      const Type *memberType = env.getResolvedType(member.second);
+      if (!memberType)
         // Maybe do this eagerly instead of waiting for a member access?
         throw SemanticError("Member of unknown type");
-      }
-      return resolveType(iter->second.get());
+      return memberType;
     }
   }
   throw SemanticError("Can't find the right member on the record type");
 }
 
-const Type *Semantic::resolveType(const Type *type) const {
-  const Type *resolvedType = type;
-  while (resolvedType->getKind() == TypeKind::Alias) {
-    const Symbol typeIdentifier =
-        static_cast<const Alias *>(resolvedType)->typeIdentifier;
-    const auto iter = typeDefs->find(typeIdentifier);
-    if (iter == typeDefs->end())
-      throw SemanticError("Could not resolve type");
-    resolvedType = iter->second.get();
-  }
-  return resolvedType;
-}
-
 bool Semantic::isCompatibleType(const Type *lhs, const Type *rhs) const {
-  lhs = resolveType(lhs);
-  rhs = resolveType(rhs);
   // Different resolved kinds are always incompatible.
   if (lhs->getKind() != rhs->getKind())
     return false;

@@ -46,10 +46,10 @@ Block Parser::parseBlock() {
   std::vector<ConstDef> constDefs;
   if (currentToken.kind == TokenKind::Const)
     constDefs = parseConstDefs();
-  TypeDefs typeDefs;
+  std::vector<TypeDef> typeDefs;
   if (currentToken.kind == TokenKind::Type)
     typeDefs = parseTypeDefs();
-  VarDecls varDecls;
+  std::vector<VarDecl> varDecls;
   if (currentToken.kind == TokenKind::Var)
     varDecls = parseVarDecls();
   std::vector<std::unique_ptr<Function>> functions;
@@ -98,16 +98,16 @@ std::vector<ConstDef> Parser::parseConstDefs() {
 
 ExprPtr Parser::parseConstExpr() { return parsePrimaryExpr(); }
 
-TypeDefs Parser::parseTypeDefs() {
+std::vector<TypeDef> Parser::parseTypeDefs() {
   expectToken(TokenKind::Type);
-  TypeDefs typeDefs;
+  std::vector<TypeDef> typeDefs;
   // This is definitely wrong. Even if there's no `type` section, we need to add
   // these.
   //
   // Maybe this needs to happen during semantic analysis?
-  typeDefs[symbols.make("integer")] = std::make_unique<Integer>();
-  typeDefs[symbols.make("boolean")] = std::make_unique<Boolean>();
-  typeDefs[symbols.make("string")] = std::make_unique<String>();
+  typeDefs.emplace_back(symbols.make("integer"), std::make_unique<Integer>());
+  typeDefs.emplace_back(symbols.make("boolean"), std::make_unique<Boolean>());
+  typeDefs.emplace_back(symbols.make("string"), std::make_unique<String>());
   while (!isDone() && currentToken.kind != TokenKind::Var &&
          currentToken.kind != TokenKind::Function &&
          currentToken.kind != TokenKind::Procedure &&
@@ -117,7 +117,7 @@ TypeDefs Parser::parseTypeDefs() {
     expectToken(TokenKind::Equal);
     auto type = parseType();
     expectToken(TokenKind::SemiColon);
-    typeDefs.emplace(symbols.make(typeIdentifier), std::move(type));
+    typeDefs.emplace_back(symbols.make(typeIdentifier), std::move(type));
   }
   return typeDefs;
 }
@@ -168,9 +168,9 @@ TypePtr Parser::parseRecord() {
   return std::make_unique<Record>(std::move(fields));
 }
 
-VarDecls Parser::parseVarDecls() {
+std::vector<VarDecl> Parser::parseVarDecls() {
   expectToken(TokenKind::Var);
-  VarDecls varDecls;
+  std::vector<VarDecl> varDecls;
   while (!isDone() && currentToken.kind != TokenKind::Function &&
          currentToken.kind != TokenKind::Procedure &&
          currentToken.kind != TokenKind::Begin) {
@@ -179,7 +179,8 @@ VarDecls Parser::parseVarDecls() {
     expectToken(TokenKind::Colon);
     auto typeIdentifier = currentToken.val;
     expectToken(TokenKind::Identifier);
-    varDecls.emplace(symbols.make(varIdentifier), symbols.make(typeIdentifier));
+    varDecls.emplace_back(symbols.make(varIdentifier),
+                          symbols.make(typeIdentifier));
     expectToken(TokenKind::SemiColon);
   }
   return varDecls;

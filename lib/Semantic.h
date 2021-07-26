@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Environment.h>
 #include <Interfaces.h>
 #include <SymbolTable.h>
 
@@ -14,8 +15,8 @@ public:
 private:
   void analyseBlock(Block &block);
   void analyseConstDefs(const std::vector<ConstDef> &constDefs);
-  void analyseTypeDefs(const TypeDefs &typeDefs);
-  void analyseVarDecls(const VarDecls &varDecls);
+  void analyseTypeDefs(const std::vector<TypeDef> &typeDefs);
+  void analyseVarDecls(const std::vector<VarDecl> &varDecls);
   void
   analyseFunctions(const std::vector<std::unique_ptr<Function>> &functions);
   void analyseBlockStatements(Statement &statement);
@@ -33,12 +34,9 @@ private:
   const Type *analyseBinaryOp(Expr &expr);
   const Type *analyseCall(Expr &expr);
   const Type *analyseMemberRef(Expr &expr);
-  const Type *resolveType(const Type *type) const;
   bool isCompatibleType(const Type *lhs, const Type *rhs) const;
   const SymbolTable &symbols;
-  const TypeDefs *typeDefs;
-  const VarDecls *varDecls;
-  const std::vector<std::unique_ptr<Function>> *functions;
+  Environment env;
 };
 
 } // namespace descartes

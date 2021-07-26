@@ -92,8 +92,16 @@ struct ConstDef {
   ExprPtr constExpr;
 };
 
-using TypeDefs = std::unordered_map<Symbol, TypePtr, SymbolHash>;
-using VarDecls = std::unordered_map<Symbol, Symbol, SymbolHash>;
+struct TypeDef {
+  TypeDef(Symbol identifier, TypePtr type);
+  Symbol identifier;
+  TypePtr type;
+};
+
+struct VarDecl {
+  VarDecl(Symbol identifier, Symbol type);
+  Symbol identifier, type;
+};
 
 enum class StatementKind {
   Assignment,
@@ -189,13 +197,13 @@ struct Function;
 
 struct Block {
   Block(std::vector<Symbol> &&labelDecls, std::vector<ConstDef> &&constDefs,
-        TypeDefs &&typeDefs, VarDecls &&varDecls,
+        std::vector<TypeDef> &&typeDefs, std::vector<VarDecl> &&varDecls,
         std::vector<std::unique_ptr<Function>> functions,
         StatementPtr statements);
   std::vector<Symbol> labelDecls;
   std::vector<ConstDef> constDefs;
-  TypeDefs typeDefs;
-  VarDecls varDecls;
+  std::vector<TypeDef> typeDefs;
+  std::vector<VarDecl> varDecls;
   std::vector<std::unique_ptr<Function>> functions;
   StatementPtr statements;
 };

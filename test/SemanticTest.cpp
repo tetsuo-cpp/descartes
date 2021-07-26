@@ -126,6 +126,30 @@ TEST_CASE("semantic type error argument 2", "[semantic]") {
   testSemanticFailure(program, "Gave function wrong type");
 }
 
+TEST_CASE("semantic unknown function", "[semantic]") {
+  const char *program = "begin"
+                        "  unknownFunction()"
+                        "end.";
+  testSemanticFailure(program, "Unknown function");
+}
+
+TEST_CASE("semantic recursive call", "[semantic]") {
+  const char *program = "type "
+                        "function fib(x: integer): integer;"
+                        "begin"
+                        "  if x = 0 then"
+                        "    fib := 0"
+                        "  else if x = 1 then"
+                        "    fib := 1"
+                        "  else"
+                        "    fib := fib(x - 1) + fib(x - 2)"
+                        "end;"
+                        "begin"
+                        "  fib(10)"
+                        "end.";
+  testSemanticSuccess(program);
+}
+
 TEST_CASE("semantic unknown variable", "[semantic]") {
   const char *program = "begin"
                         "  x := 1"

@@ -15,8 +15,8 @@ private:
   using json = nlohmann::json;
   json convertBlock(Block &block);
   json convertConstDef(ConstDef &constDef);
-  json convertTypeDefs(TypeDefs &typeDefs);
-  json convertVarDecls(VarDecls &varDecls);
+  json convertTypeDef(TypeDef &typeDef);
+  json convertVarDecl(VarDecl &varDecl);
   json convertFunction(Function &function);
   json convertStatement(Statement &statement);
   json convertAssignment(Statement &statement);

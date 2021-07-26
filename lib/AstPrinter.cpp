@@ -25,8 +25,14 @@ json AstPrinter::convertBlock(Block &block) {
   for (auto &constDef : block.constDefs)
     constDefs.emplace_back(convertConstDef(constDef));
   blockObj["ConstDefs"] = constDefs;
-  blockObj["TypeDefs"] = convertTypeDefs(block.typeDefs);
-  blockObj["VarDecls"] = convertVarDecls(block.varDecls);
+  json typeDefs = json::array();
+  for (auto &typeDef : block.typeDefs)
+    typeDefs.emplace_back(convertTypeDef(typeDef));
+  blockObj["TypeDefs"] = typeDefs;
+  json varDecls = json::array();
+  for (auto &varDecl : block.varDecls)
+    varDecls.emplace_back(convertVarDecl(varDecl));
+  blockObj["VarDecls"] = varDecls;
   json functions = json::array();
   for (auto &function : block.functions)
     functions.emplace_back(convertFunction(*function));
@@ -42,28 +48,20 @@ json AstPrinter::convertConstDef(ConstDef &constDef) {
   return constDefObj;
 }
 
-json AstPrinter::convertTypeDefs(TypeDefs &typeDefs) {
-  json typeDefsObj = json::array();
-  for (const auto &typeDef : typeDefs) {
-    json typeDefObj;
-    typeDefObj["Type"] = "TypeDef";
-    typeDefObj["Identifier"] = typeDef.first.getName();
-    // TODO: Print types.
-    typeDefsObj.emplace_back(typeDefObj);
-  }
-  return typeDefsObj;
+json AstPrinter::convertTypeDef(TypeDef &typeDef) {
+  json typeDefObj;
+  // TODO: Print types.
+  typeDefObj["Type"] = "TypeDef";
+  typeDefObj["Identifier"] = typeDef.identifier.getName();
+  return typeDefObj;
 }
 
-json AstPrinter::convertVarDecls(VarDecls &varDecls) {
-  json varDeclsObj = json::array();
-  for (const auto &varDecl : varDecls) {
-    json varDeclObj;
-    varDeclObj["Type"] = "VarDecl";
-    varDeclObj["Identifier"] = varDecl.first.getName();
-    varDeclObj["Type"] = varDecl.second.getName();
-    varDeclsObj.emplace_back(varDeclObj);
-  }
-  return varDeclsObj;
+json AstPrinter::convertVarDecl(VarDecl &varDecl) {
+  json varDeclObj;
+  varDeclObj["Type"] = "VarDecl";
+  varDeclObj["Identifier"] = varDecl.identifier.getName();
+  varDeclObj["Type"] = varDecl.type.getName();
+  return varDeclObj;
 }
 
 json AstPrinter::convertFunction(Function &function) {
