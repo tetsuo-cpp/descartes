@@ -15,12 +15,12 @@ void Semantic::analyse(Block &program) {
   env.exitScope();
 }
 
-void Semantic::analyseBlock(Block &program) {
-  analyseConstDefs(program.constDefs);
-  analyseTypeDefs(program.typeDefs);
-  analyseVarDecls(program.varDecls);
-  analyseFunctions(program.functions);
-  analyseBlockStatements(*program.statements);
+void Semantic::analyseBlock(Block &block) {
+  analyseConstDefs(block.constDefs);
+  analyseTypeDefs(block.typeDefs);
+  analyseVarDecls(block.varDecls);
+  analyseFunctions(block.functions);
+  analyseBlockStatements(*block.statements);
 }
 
 void Semantic::analyseConstDefs(const std::vector<ConstDef> &constDefs) {
