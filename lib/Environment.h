@@ -7,6 +7,7 @@
 
 namespace descartes {
 
+// TODO: Rename to `FunctionEntry`.
 struct FunctionType {
   FunctionType(const Function *function, const Type *returnType,
                std::vector<const Type *> &&argTypes);

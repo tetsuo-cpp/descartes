@@ -199,7 +199,7 @@ json AstPrinter::convertStringLiteral(Expr &expr) {
   assert(stringLiteral);
   json stringLiteralObj;
   stringLiteralObj["Type"] = "StringLiteral";
-  stringLiteralObj["Val"] = stringLiteral->val;
+  stringLiteralObj["Val"] = stringLiteral->val.getName();
   return stringLiteralObj;
 }
 

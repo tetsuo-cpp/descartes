@@ -7,8 +7,11 @@ namespace descartes::ir {
 // TODO: Abstract out ARM specific details.
 static int wordSize = 8;
 
+// TODO: Implement escape detection and use registers for non-escaping args.
+struct Level;
 struct Access {
-  explicit Access(int offset) : offset(offset) {}
+  explicit Access(Level *level, int offset) : level(level), offset(offset) {}
+  Level *level;
   int offset;
 };
 
@@ -16,21 +19,23 @@ struct Level {
   explicit Level(Symbol name) : name(name) {}
   void allocLocal() {
     int offset = locals.size() * wordSize;
-    locals.emplace_back(-offset);
+    locals.emplace_back(this, -offset);
   }
   const Symbol name;
   std::vector<Access> locals;
 };
 
-using StatementPtr = std::unique_ptr<Statement>;
+using Fragment = std::pair<Level, StatementPtr>;
+
 struct Statement {
   virtual ~Statement() = default;
 };
+using StatementPtr = std::unique_ptr<Statement>;
 
-using ExprPtr = std::unique_ptr<Expr>;
 struct Expr {
   virtual ~Expr() = default;
 };
+using ExprPtr = std::unique_ptr<Expr>;
 
 struct Sequence : public Statement {
   explicit Sequence(std::vector<StatementPtr> &&statements)
@@ -43,17 +48,18 @@ struct Label : public Statement {
   const Symbol label;
 };
 
-enum class RelOp {
+enum class RelOpKind {
   Equal,
   NotEqual,
   LessThan,
   GreaterThan,
   LessThanEqual,
   GreaterThanEqual,
-  LessThanUnsigned,
-  GreaterThanUnsigned,
-  LessThanEqualUnsigned,
-  GreaterThanEqualUnsigned,
+  // TODO: Figure out how to deal with unsigned comparisons
+  // LessThanUnsigned,
+  // GreaterThanUnsigned,
+  // LessThanEqualUnsigned,
+  // GreaterThanEqualUnsigned,
 };
 
 struct Jump : public Statement {
@@ -62,11 +68,11 @@ struct Jump : public Statement {
 };
 
 struct CondJump : public Statement {
-  CondJump(RelOp op, ExprPtr lhs, ExprPtr rhs, Symbol trueLabel,
+  CondJump(RelOpKind op, ExprPtr lhs, ExprPtr rhs, Symbol trueLabel,
            Symbol elseLabel)
       : op(op), lhs(std::move(lhs)), rhs(std::move(rhs)), trueLabel(trueLabel),
         elseLabel(elseLabel) {}
-  const RelOp op;
+  const RelOpKind op;
   const ExprPtr lhs, rhs;
   const Symbol trueLabel, elseLabel;
 };
@@ -81,8 +87,17 @@ struct CallStatement : public Statement {
   const ExprPtr call;
 };
 
-struct BinOp : public Expr {
-  // BinOp op;
+enum class ArithOpKind {
+  Add,
+  Subtract,
+  Multiply,
+  Divide,
+};
+
+struct ArithOp : public Expr {
+  ArithOp(ArithOpKind op, ExprPtr lhs, ExprPtr rhs)
+      : op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
+  ArithOpKind op;
   const ExprPtr lhs, rhs;
 };
 
@@ -106,6 +121,11 @@ struct Call : public Expr {
       : functionName(functionName), args(std::move(args)) {}
   Symbol functionName;
   std::vector<ExprPtr> args;
+};
+
+struct CondExpr : public Expr {
+  explicit CondExpr(StatementPtr condJump) : condJump(std::move(condJump)) {}
+  StatementPtr condJump;
 };
 
 } // namespace descartes::ir

@@ -36,7 +36,7 @@ Function::Function(Symbol name, std::vector<FunctionArg> &&args, Block &&block,
     : name(name), args(std::move(args)), block(std::move(block)),
       returnType(returnType) {}
 
-StringLiteral::StringLiteral(std::string &&val) : val(std::move(val)) {}
+StringLiteral::StringLiteral(Symbol val) : val(val) {}
 
 ExprKind StringLiteral::getKind() const { return ExprKind::StringLiteral; }
 
