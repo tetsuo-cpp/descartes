@@ -68,13 +68,13 @@ struct Jump : public Statement {
 };
 
 struct CondJump : public Statement {
-  CondJump(RelOpKind op, ExprPtr lhs, ExprPtr rhs, Symbol trueLabel,
+  CondJump(RelOpKind op, ExprPtr lhs, ExprPtr rhs, Symbol thenLabel,
            Symbol elseLabel)
-      : op(op), lhs(std::move(lhs)), rhs(std::move(rhs)), trueLabel(trueLabel),
+      : op(op), lhs(std::move(lhs)), rhs(std::move(rhs)), thenLabel(thenLabel),
         elseLabel(elseLabel) {}
   const RelOpKind op;
   const ExprPtr lhs, rhs;
-  const Symbol trueLabel, elseLabel;
+  const Symbol thenLabel, elseLabel;
 };
 
 struct Move : public Statement {
