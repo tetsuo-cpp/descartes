@@ -15,7 +15,7 @@ ir::ArithOpKind binOpKindToArithOpKind(BinaryOpKind kind) {
   case BinaryOpKind::Divide:
     return ir::ArithOpKind::Divide;
   default:
-    assert(false);
+    throw SemanticError("Invalid ArithOp kind");
   }
 }
 
@@ -34,7 +34,7 @@ ir::RelOpKind binOpKindToRelOpKind(BinaryOpKind kind) {
   case BinaryOpKind::GreaterThanEqual:
     return ir::RelOpKind::GreaterThanEqual;
   default:
-    assert(false);
+    throw SemanticError("Invalid RelOp kind");
   }
 }
 
