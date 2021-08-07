@@ -77,13 +77,13 @@ void Semantic::analyseFunctions(
       argTypes.push_back(argType);
     }
     // Set the function type so outer callers can use it.
-    FunctionType functionType(f.get(), returnType, std::move(argTypes));
+    FunctionEntry functionType(f.get(), returnType, std::move(argTypes));
     env.setFunctionType(f->name, std::move(functionType));
   }
   // Now analyse each function block.
   for (const auto &f : functions) {
     env.enterScope();
-    const FunctionType *functionType = env.getFunctionType(f->name);
+    const FunctionEntry *functionType = env.getFunctionType(f->name);
     if (functionType->returnType)
       // Is this the right spot here? In Pascal, functions have a variable with
       // the same name as the function itself that is used to capture the return
@@ -294,7 +294,7 @@ Semantic::ExprResult Semantic::analyseCall(Expr &expr) {
   auto *call = exprCast<Call *>(expr);
   assert(call);
   // Get function.
-  const FunctionType *function = env.getFunctionType(call->functionName);
+  const FunctionEntry *function = env.getFunctionType(call->functionName);
   if (!function)
     throw SemanticError("Unknown function");
   if (function->argTypes.size() != call->args.size())

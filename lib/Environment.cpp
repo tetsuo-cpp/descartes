@@ -2,8 +2,8 @@
 
 namespace descartes {
 
-FunctionType::FunctionType(const Function *function, const Type *returnType,
-                           std::vector<const Type *> &&argTypes)
+FunctionEntry::FunctionEntry(const Function *function, const Type *returnType,
+                             std::vector<const Type *> &&argTypes)
     : function(function), returnType(returnType),
       argTypes(std::move(argTypes)) {}
 
@@ -38,13 +38,13 @@ bool Environment::setVarType(Symbol name, const Type *type) {
   return true;
 }
 
-bool Environment::setFunctionType(Symbol name, FunctionType &&function) {
+bool Environment::setFunctionType(Symbol name, FunctionEntry &&function) {
   assert(!scopes.empty());
   auto &currentScope = scopes.back();
-  auto iter = currentScope.functionTypes.find(name);
-  if (iter != currentScope.functionTypes.end())
+  auto iter = currentScope.functionEntries.find(name);
+  if (iter != currentScope.functionEntries.end())
     return false;
-  currentScope.functionTypes.emplace(name, std::move(function));
+  currentScope.functionEntries.emplace(name, std::move(function));
   return true;
 }
 
@@ -70,13 +70,13 @@ const Type *Environment::getVarType(Symbol name) const {
   return nullptr;
 }
 
-const FunctionType *Environment::getFunctionType(Symbol name) const {
+const FunctionEntry *Environment::getFunctionType(Symbol name) const {
   assert(!scopes.empty());
   // Iterate backwards.
   for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
     const auto &scope = *it;
-    const auto funcIter = scope.functionTypes.find(name);
-    if (funcIter != scope.functionTypes.end())
+    const auto funcIter = scope.functionEntries.find(name);
+    if (funcIter != scope.functionEntries.end())
       return &funcIter->second;
   }
   return nullptr;
