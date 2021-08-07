@@ -1,5 +1,7 @@
 #include "Translate.h"
 
+#include <cassert>
+
 namespace descartes {
 
 namespace {
