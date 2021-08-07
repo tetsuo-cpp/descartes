@@ -17,9 +17,10 @@ struct Access {
 
 struct Level {
   explicit Level(Symbol name) : name(name) {}
-  void allocLocal() {
+  Access allocLocal() {
     int offset = locals.size() * wordSize;
     locals.emplace_back(this, -offset);
+    return locals.back();
   }
   const Symbol name;
   std::vector<Access> locals;

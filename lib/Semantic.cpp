@@ -4,15 +4,15 @@
 
 namespace descartes {
 
-// TODO: Remove `const_cast`. Maybe construct the env at the top level and pass
-// it in as an arg?
-Semantic::Semantic(const SymbolTable &symbols)
-    : symbols(symbols), env(const_cast<SymbolTable &>(symbols)),
-      translate(const_cast<SymbolTable &>(symbols)) {}
+Semantic::Semantic(SymbolTable &symbols)
+    : symbols(symbols), env(symbols), translate(symbols) {}
 
 const std::vector<ir::Fragment> &Semantic::analyse(Block &program) {
+  // TODO: Consolidate `enterScope` and `enterLevel`.
   env.enterScope();
+  translate.enterLevel(symbols.make("main"));
   analyseBlock(program);
+  translate.exitLevel();
   env.exitScope();
   return translate.getFrags();
 }
@@ -28,7 +28,8 @@ void Semantic::analyseBlock(Block &block) {
 void Semantic::analyseConstDefs(const std::vector<ConstDef> &constDefs) {
   for (const auto &cd : constDefs) {
     const auto exprType = analyseExpr(*cd.constExpr);
-    if (!env.setVarType(cd.identifier, exprType.second))
+    const ir::Access access = translate.getCurrentLevel()->allocLocal();
+    if (!env.setVarType(cd.identifier, VarEntry(exprType.second, access)))
       throw SemanticError("Const already defined");
   }
 }
@@ -53,7 +54,8 @@ void Semantic::analyseVarDecls(const std::vector<VarDecl> &varDecls) {
     const Type *varType = env.getResolvedType(vd.type);
     if (!varType)
       throw SemanticError("Could not find type of variable");
-    if (!env.setVarType(vd.identifier, varType))
+    const ir::Access access = translate.getCurrentLevel()->allocLocal();
+    if (!env.setVarType(vd.identifier, VarEntry(varType, access)))
       throw SemanticError("Variable already defined");
   }
 }
@@ -83,20 +85,26 @@ void Semantic::analyseFunctions(
   // Now analyse each function block.
   for (const auto &f : functions) {
     env.enterScope();
+    translate.enterLevel(f->name);
     const FunctionEntry *functionType = env.getFunctionType(f->name);
-    if (functionType->returnType)
+    if (functionType->returnType) {
+      const ir::Access access = translate.getCurrentLevel()->allocLocal();
       // Is this the right spot here? In Pascal, functions have a variable with
       // the same name as the function itself that is used to capture the return
       // value.
-      if (!env.setVarType(f->name, functionType->returnType))
+      if (!env.setVarType(f->name, VarEntry(functionType->returnType, access)))
         throw SemanticError("Return value already defined");
+    }
     // Register each param as a variable.
-    for (size_t i = 0; i < f->args.size(); ++i)
+    for (size_t i = 0; i < f->args.size(); ++i) {
+      const ir::Access argAccess = translate.getCurrentLevel()->allocLocal();
       if (!env.setVarType(f->args.at(i).identifier,
-                          functionType->argTypes.at(i)))
+                          VarEntry(functionType->argTypes.at(i), argAccess)))
         throw SemanticError("Argument already defined");
+    }
     // Now semantically analyse the associated nested functions and blocks.
     analyseBlock(f->block);
+    translate.exitLevel();
     env.exitScope();
   }
 }

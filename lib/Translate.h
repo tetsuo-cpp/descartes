@@ -25,7 +25,7 @@ public:
   const std::vector<ir::Fragment> &getFrags() const;
   void enterLevel(Symbol name);
   void exitLevel();
-  const ir::Level *getCurrentLevel() const;
+  ir::Level *getCurrentLevel();
 
 private:
   Symbol makeLabel();

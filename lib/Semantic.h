@@ -9,7 +9,7 @@ namespace descartes {
 
 class Semantic {
 public:
-  explicit Semantic(const SymbolTable &symbols);
+  explicit Semantic(SymbolTable &symbols);
   virtual ~Semantic() = default;
   const std::vector<ir::Fragment> &analyse(Block &program);
 
@@ -37,7 +37,7 @@ private:
   ExprResult analyseCall(Expr &expr);
   ExprResult analyseMemberRef(Expr &expr);
   bool isCompatibleType(const Type *lhs, const Type *rhs) const;
-  const SymbolTable &symbols;
+  SymbolTable &symbols;
   Environment env;
   Translate translate;
 };

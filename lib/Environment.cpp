@@ -28,13 +28,13 @@ void Environment::exitScope() {
   scopes.pop_back();
 }
 
-bool Environment::setVarType(Symbol name, const Type *type) {
+bool Environment::setVarType(Symbol name, VarEntry var) {
   assert(!scopes.empty());
   auto &currentScope = scopes.back();
-  auto iter = currentScope.varTypes.find(name);
-  if (iter != currentScope.varTypes.end())
+  auto iter = currentScope.varEntries.find(name);
+  if (iter != currentScope.varEntries.end())
     return false;
-  currentScope.varTypes.emplace(name, type);
+  currentScope.varEntries.emplace(name, var);
   return true;
 }
 
@@ -58,14 +58,14 @@ bool Environment::setResolvedType(Symbol name, const Type *type) {
   return true;
 }
 
-const Type *Environment::getVarType(Symbol name) const {
+const VarEntry *Environment::getVarType(Symbol name) const {
   assert(!scopes.empty());
   // Iterate backwards.
   for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
     const auto &scope = *it;
-    const auto varIter = scope.varTypes.find(name);
-    if (varIter != scope.varTypes.end())
-      return varIter->second;
+    const auto varIter = scope.varEntries.find(name);
+    if (varIter != scope.varEntries.end())
+      return &varIter->second;
   }
   return nullptr;
 }

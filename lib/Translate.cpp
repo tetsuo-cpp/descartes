@@ -169,9 +169,7 @@ void Translate::enterLevel(Symbol name) {
 
 void Translate::exitLevel() { levels.pop_back(); }
 
-const ir::Level *Translate::getCurrentLevel() const {
-  return levels.back().get();
-}
+ir::Level *Translate::getCurrentLevel() { return levels.back().get(); }
 
 // TODO: Make a label type to ensure that they're not exchangeable with symbols.
 Symbol Translate::makeLabel() {

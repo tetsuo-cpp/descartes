@@ -12,7 +12,7 @@ public:
   explicit Parser(ILexer &lexer);
   virtual ~Parser() = default;
   Block parse() override;
-  const SymbolTable &getSymbols() const;
+  SymbolTable &getSymbols();
 
 private:
   void readToken();

@@ -16,7 +16,7 @@ Block Parser::parse() {
   return programBlock;
 }
 
-const SymbolTable &Parser::getSymbols() const { return symbols; }
+SymbolTable &Parser::getSymbols() { return symbols; }
 
 void Parser::readToken() { currentToken = lexer.lex(); }
 
