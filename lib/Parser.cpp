@@ -16,7 +16,7 @@ Block Parser::parse() {
   return programBlock;
 }
 
-const SymbolTable &Parser::getSymbols() const { return symbols; }
+SymbolTable &Parser::getSymbols() { return symbols; }
 
 void Parser::readToken() { currentToken = lexer.lex(); }
 
@@ -330,7 +330,7 @@ ExprPtr Parser::parsePrimaryExpr() {
   case TokenKind::String: {
     auto stringVal = currentToken.val;
     expectToken(TokenKind::String);
-    return std::make_unique<StringLiteral>(std::move(stringVal));
+    return std::make_unique<StringLiteral>(symbols.make(stringVal));
   }
   case TokenKind::Number: {
     int val;

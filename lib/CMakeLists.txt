@@ -4,6 +4,7 @@ set(
   AstPrinter.cpp
   Environment.cpp
   Interfaces.cpp
+  Translate.cpp
   Lexer.cpp
   Parser.cpp
   Semantic.cpp

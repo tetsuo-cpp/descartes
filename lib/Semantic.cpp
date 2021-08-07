@@ -4,29 +4,32 @@
 
 namespace descartes {
 
-// TODO: Remove `const_cast`. Maybe construct the env at the top level and pass
-// it in as an arg?
-Semantic::Semantic(const SymbolTable &symbols)
-    : symbols(symbols), env(const_cast<SymbolTable &>(symbols)) {}
+Semantic::Semantic(SymbolTable &symbols)
+    : symbols(symbols), env(symbols), translate(symbols) {}
 
-void Semantic::analyse(Block &program) {
+const std::vector<ir::Fragment> &Semantic::analyse(Block &program) {
+  // TODO: Consolidate `enterScope` and `enterLevel`.
   env.enterScope();
+  translate.enterLevel(symbols.make("main"));
   analyseBlock(program);
+  translate.exitLevel();
   env.exitScope();
+  return translate.getFrags();
 }
 
-void Semantic::analyseBlock(Block &program) {
-  analyseConstDefs(program.constDefs);
-  analyseTypeDefs(program.typeDefs);
-  analyseVarDecls(program.varDecls);
-  analyseFunctions(program.functions);
-  analyseBlockStatements(*program.statements);
+void Semantic::analyseBlock(Block &block) {
+  analyseConstDefs(block.constDefs);
+  analyseTypeDefs(block.typeDefs);
+  analyseVarDecls(block.varDecls);
+  analyseFunctions(block.functions);
+  analyseBlockStatements(*block.statements);
 }
 
 void Semantic::analyseConstDefs(const std::vector<ConstDef> &constDefs) {
   for (const auto &cd : constDefs) {
-    const Type *exprType = analyseExpr(*cd.constExpr);
-    if (!env.setVarType(cd.identifier, exprType))
+    const auto exprType = analyseExpr(*cd.constExpr);
+    const ir::Access access = translate.getCurrentLevel()->allocLocal();
+    if (!env.setVarType(cd.identifier, VarEntry(exprType.second, access)))
       throw SemanticError("Const already defined");
   }
 }
@@ -51,7 +54,8 @@ void Semantic::analyseVarDecls(const std::vector<VarDecl> &varDecls) {
     const Type *varType = env.getResolvedType(vd.type);
     if (!varType)
       throw SemanticError("Could not find type of variable");
-    if (!env.setVarType(vd.identifier, varType))
+    const ir::Access access = translate.getCurrentLevel()->allocLocal();
+    if (!env.setVarType(vd.identifier, VarEntry(varType, access)))
       throw SemanticError("Variable already defined");
   }
 }
@@ -75,26 +79,32 @@ void Semantic::analyseFunctions(
       argTypes.push_back(argType);
     }
     // Set the function type so outer callers can use it.
-    FunctionType functionType(f.get(), returnType, std::move(argTypes));
+    FunctionEntry functionType(f.get(), returnType, std::move(argTypes));
     env.setFunctionType(f->name, std::move(functionType));
   }
   // Now analyse each function block.
   for (const auto &f : functions) {
     env.enterScope();
-    const FunctionType *functionType = env.getFunctionType(f->name);
-    if (functionType->returnType)
+    translate.enterLevel(f->name);
+    const FunctionEntry *functionType = env.getFunctionType(f->name);
+    if (functionType->returnType) {
+      const ir::Access access = translate.getCurrentLevel()->allocLocal();
       // Is this the right spot here? In Pascal, functions have a variable with
       // the same name as the function itself that is used to capture the return
       // value.
-      if (!env.setVarType(f->name, functionType->returnType))
+      if (!env.setVarType(f->name, VarEntry(functionType->returnType, access)))
         throw SemanticError("Return value already defined");
+    }
     // Register each param as a variable.
-    for (size_t i = 0; i < f->args.size(); ++i)
+    for (size_t i = 0; i < f->args.size(); ++i) {
+      const ir::Access argAccess = translate.getCurrentLevel()->allocLocal();
       if (!env.setVarType(f->args.at(i).identifier,
-                          functionType->argTypes.at(i)))
+                          VarEntry(functionType->argTypes.at(i), argAccess)))
         throw SemanticError("Argument already defined");
+    }
     // Now semantically analyse the associated nested functions and blocks.
     analyseBlock(f->block);
+    translate.exitLevel();
     env.exitScope();
   }
 }
@@ -107,83 +117,91 @@ void Semantic::analyseBlockStatements(Statement &statement) {
     analyseStatement(*s);
 }
 
-void Semantic::analyseStatement(Statement &statement) {
+ir::StatementPtr Semantic::analyseStatement(Statement &statement) {
   switch (statement.getKind()) {
   case StatementKind::Assignment:
-    analyseAssignment(statement);
-    break;
+    return analyseAssignment(statement);
   case StatementKind::Compound:
-    analyseCompound(statement);
-    break;
+    return analyseCompound(statement);
   case StatementKind::If:
-    analyseIf(statement);
-    break;
+    return analyseIf(statement);
   case StatementKind::Case:
-    analyseCase(statement);
-    break;
+    return analyseCase(statement);
   case StatementKind::While:
-    analyseWhile(statement);
-    break;
+    return analyseWhile(statement);
   case StatementKind::Call:
-    analyseCallStatement(statement);
-    break;
+    return analyseCallStatement(statement);
   default:
-    assert(!"Unsupported statement kind");
+    throw SemanticError("Unsupported statement kind");
   }
 }
 
-void Semantic::analyseAssignment(Statement &statement) {
+ir::StatementPtr Semantic::analyseAssignment(Statement &statement) {
   // TODO: Handle const.
   auto *assignment = statementCast<Assignment *>(statement);
   assert(assignment);
-  const Type *lhs = analyseExpr(*assignment->lhs),
-             *rhs = analyseExpr(*assignment->rhs);
-  if (!isCompatibleType(lhs, rhs))
+  auto lhs = analyseExpr(*assignment->lhs), rhs = analyseExpr(*assignment->rhs);
+  if (!isCompatibleType(lhs.second, rhs.second))
     throw SemanticError("Assignment error");
+  auto moveVal = translate.makeMove(std::move(lhs.first), std::move(rhs.first));
+  return moveVal;
 }
 
-void Semantic::analyseCompound(Statement &statement) {
+ir::StatementPtr Semantic::analyseCompound(Statement &statement) {
   auto *compound = statementCast<Compound *>(statement);
   assert(compound);
+  std::vector<ir::StatementPtr> body;
   for (const auto &s : compound->body)
-    analyseStatement(*s);
+    body.push_back(analyseStatement(*s));
+  return translate.makeSequence(std::move(body));
 }
 
-void Semantic::analyseIf(Statement &statement) {
+ir::StatementPtr Semantic::analyseIf(Statement &statement) {
   auto *ifStatement = statementCast<If *>(statement);
   assert(ifStatement);
-  const auto *condType = analyseExpr(*ifStatement->cond);
-  if (condType->getKind() != TypeKind::Boolean)
+  auto condType = analyseExpr(*ifStatement->cond);
+  if (condType.second->getKind() != TypeKind::Boolean)
     throw SemanticError("If condition must be boolean");
-  analyseStatement(*ifStatement->thenStatement);
+  // Check whether we're checking a boolean value or return value OR there's a
+  // relational check here.
+  auto &condVal = condType.first;
+  ir::StatementPtr thenVal = analyseStatement(*ifStatement->thenStatement),
+                   elseVal;
   if (ifStatement->elseStatement)
-    analyseStatement(*ifStatement->elseStatement);
+    elseVal = analyseStatement(*ifStatement->elseStatement);
+  return translate.makeIf(std::move(condVal), std::move(thenVal),
+                          std::move(elseVal));
 }
 
-void Semantic::analyseCase(Statement &statement) {
+ir::StatementPtr Semantic::analyseCase(Statement &statement) {
   // TODO: Implement case statements.
   static_cast<void>(statement);
+  throw SemanticError("Case statements not implemented");
 }
 
-void Semantic::analyseWhile(Statement &statement) {
+ir::StatementPtr Semantic::analyseWhile(Statement &statement) {
   auto *whileStatement = statementCast<While *>(statement);
   assert(whileStatement);
-  const auto *condType = analyseExpr(*whileStatement->cond);
-  if (condType->getKind() != TypeKind::Boolean)
+  auto condType = analyseExpr(*whileStatement->cond);
+  if (condType.second->getKind() != TypeKind::Boolean)
     throw SemanticError("While condition must be a boolean");
-  analyseStatement(*whileStatement->body);
+  auto bodyVal = analyseStatement(*whileStatement->body);
+  auto whileVal =
+      translate.makeWhile(std::move(condType.first), std::move(bodyVal));
+  return whileVal;
 }
 
-void Semantic::analyseCallStatement(Statement &statement) {
+ir::StatementPtr Semantic::analyseCallStatement(Statement &statement) {
   auto *callStatement = statementCast<CallStatement *>(statement);
   assert(callStatement);
   auto *call = exprCast<Call *>(*callStatement->call);
   if (!call)
     throw SemanticError("Call statement with a non-call node within");
-  analyseExpr(*call);
+  auto callVal = analyseExpr(*call);
+  return translate.makeCallStatement(std::move(callVal.first));
 }
 
-const Type *Semantic::analyseExpr(Expr &expr) {
+Semantic::ExprResult Semantic::analyseExpr(Expr &expr) {
   switch (expr.getKind()) {
   case ExprKind::StringLiteral:
     return analyseStringLiteral(expr);
@@ -198,102 +216,118 @@ const Type *Semantic::analyseExpr(Expr &expr) {
   case ExprKind::MemberRef:
     return analyseMemberRef(expr);
   }
-  return nullptr;
+  throw SemanticError("Unknown expr type");
 }
 
-const Type *Semantic::analyseStringLiteral(Expr &expr) {
+Semantic::ExprResult Semantic::analyseStringLiteral(Expr &expr) {
   auto *stringLiteral = exprCast<StringLiteral *>(expr);
   assert(stringLiteral);
   const auto *stringType = env.getResolvedType(*symbols.lookup("string"));
   assert(stringType && stringType->getKind() == TypeKind::String);
-  return stringType;
+  auto nameVal = translate.makeName(*stringLiteral);
+  return {std::move(nameVal), stringType};
 }
 
-const Type *Semantic::analyseNumberLiteral(Expr &expr) {
+Semantic::ExprResult Semantic::analyseNumberLiteral(Expr &expr) {
   auto *numberLiteral = exprCast<NumberLiteral *>(expr);
   assert(numberLiteral);
   const auto *numberType = env.getResolvedType(*symbols.lookup("integer"));
   assert(numberType && numberType->getKind() == TypeKind::Integer);
-  return numberType;
+  auto constVal = translate.makeConst(*numberLiteral);
+  return {std::move(constVal), numberType};
 }
 
-const Type *Semantic::analyseVarRef(Expr &expr) {
+Semantic::ExprResult Semantic::analyseVarRef(Expr &expr) {
   auto *varRef = exprCast<VarRef *>(expr);
   assert(varRef);
   const auto *varType = env.getVarType(varRef->identifier);
   if (!varType)
     throw SemanticError("Referencing unknown variable");
-  return varType;
+  auto varRefVal = translate.makeVarRef(varType->access);
+  return {std::move(varRefVal), varType->varType};
 }
 
-const Type *Semantic::analyseBinaryOp(Expr &expr) {
+Semantic::ExprResult Semantic::analyseBinaryOp(Expr &expr) {
   auto *binaryOp = exprCast<BinaryOp *>(expr);
   assert(binaryOp);
-  const Type *lhs = analyseExpr(*binaryOp->lhs),
-             *rhs = analyseExpr(*binaryOp->rhs);
-  const Type *integerType = env.getResolvedType(*symbols.lookup("integer"));
-  const Type *boolType = env.getResolvedType(*symbols.lookup("boolean"));
+  auto lhs = analyseExpr(*binaryOp->lhs), rhs = analyseExpr(*binaryOp->rhs);
+  const Type *integerType = env.getResolvedType(*symbols.lookup("integer")),
+             *boolType = env.getResolvedType(*symbols.lookup("boolean"));
   switch (binaryOp->kind) {
   case BinaryOpKind::Add:
   case BinaryOpKind::Subtract:
   case BinaryOpKind::Multiply:
   case BinaryOpKind::Divide: {
     // Must be integers.
-    if (lhs->getKind() != TypeKind::Integer ||
-        rhs->getKind() != TypeKind::Integer)
+    if (lhs.second->getKind() != TypeKind::Integer ||
+        rhs.second->getKind() != TypeKind::Integer)
       throw SemanticError("Expected integer in binary op");
-    return integerType;
+    auto binOpVal = translate.makeArithOp(binaryOp->kind, std::move(lhs.first),
+                                          std::move(rhs.first));
+    return {std::move(binOpVal), integerType};
   }
   case BinaryOpKind::LessThan:
   case BinaryOpKind::GreaterThan:
   case BinaryOpKind::LessThanEqual:
   case BinaryOpKind::GreaterThanEqual: {
     // Must be integers.
-    if (lhs->getKind() != TypeKind::Integer ||
-        rhs->getKind() != TypeKind::Integer)
+    if (lhs.second->getKind() != TypeKind::Integer ||
+        rhs.second->getKind() != TypeKind::Integer)
       throw SemanticError("Expected integer in binary op");
-    return boolType;
+    auto relOpVal = translate.makeCondJump(binaryOp->kind, std::move(lhs.first),
+                                           std::move(rhs.first));
+    // TODO: Reassess the use of `CondJump`.
+    // At the moment, I'm intending to just leave the labels blank when it's not
+    // used in a conditional. If that works fine, then consider renaming this to
+    // something else since it's not necessarily jumping anywhere.
+    return {std::move(relOpVal), boolType};
   }
   case BinaryOpKind::Equal:
   case BinaryOpKind::NotEqual:
     // Can be integers, strings or booleans.
-    const auto lhsKind = lhs->getKind(), rhsKind = rhs->getKind();
+    const auto lhsKind = lhs.second->getKind(), rhsKind = rhs.second->getKind();
     if (lhsKind != rhsKind)
       throw SemanticError("Mismatching types in equality");
     if (lhsKind != TypeKind::Integer && lhsKind != TypeKind::String &&
         lhsKind != TypeKind::Boolean)
       throw SemanticError("Expected integer, string or boolean in equality");
-    return boolType;
+    auto relOpVal = translate.makeCondJump(binaryOp->kind, std::move(lhs.first),
+                                           std::move(rhs.first));
+    return {std::move(relOpVal), boolType};
   }
-  return nullptr;
+  throw SemanticError("Unknown binary op");
 }
 
-const Type *Semantic::analyseCall(Expr &expr) {
+Semantic::ExprResult Semantic::analyseCall(Expr &expr) {
   auto *call = exprCast<Call *>(expr);
   assert(call);
   // Get function.
-  const FunctionType *function = env.getFunctionType(call->functionName);
+  const FunctionEntry *function = env.getFunctionType(call->functionName);
   if (!function)
     throw SemanticError("Unknown function");
   if (function->argTypes.size() != call->args.size())
     throw SemanticError("Wrong number of args");
+  std::vector<ir::ExprPtr> argVals;
   for (size_t i = 0; i < call->args.size(); ++i) {
-    const Type *providedType = analyseExpr(*call->args[i]);
+    auto providedType = analyseExpr(*call->args[i]);
     const Type *fArg = function->argTypes[i];
-    if (!isCompatibleType(fArg, providedType))
+    if (!isCompatibleType(fArg, providedType.second))
       throw SemanticError("Gave function wrong type");
+    argVals.push_back(std::move(providedType.first));
   }
+  auto callVal =
+      std::make_unique<ir::Call>(call->functionName, std::move(argVals));
   // Nullptr is fine.
-  return function->returnType;
+  return {std::move(callVal), function->returnType};
 }
 
-const Type *Semantic::analyseMemberRef(Expr &expr) {
+Semantic::ExprResult Semantic::analyseMemberRef(Expr &expr) {
   auto *memberRef = exprCast<MemberRef *>(expr);
   assert(memberRef);
-  const Type *exprType = analyseExpr(*memberRef->expr);
-  if (exprType->getKind() != TypeKind::Record)
+  const auto exprType = analyseExpr(*memberRef->expr);
+  if (exprType.second->getKind() != TypeKind::Record)
     throw SemanticError("Member ref access on non-record type");
-  const Record *recordType = static_cast<const Record *>(exprType);
+  const Record *recordType = static_cast<const Record *>(exprType.second);
   for (const auto &member : recordType->fields) {
     if (member.first == memberRef->identifier) {
       // Found the member.
@@ -301,7 +335,8 @@ const Type *Semantic::analyseMemberRef(Expr &expr) {
       if (!memberType)
         // Maybe do this eagerly instead of waiting for a member access?
         throw SemanticError("Member of unknown type");
-      return memberType;
+      // TODO: Implement IR generation for records.
+      return {nullptr, memberType};
     }
   }
   throw SemanticError("Can't find the right member on the record type");

@@ -225,9 +225,9 @@ struct Function {
 };
 
 struct StringLiteral : public Expr {
-  explicit StringLiteral(std::string &&val);
+  explicit StringLiteral(Symbol val);
   ExprKind getKind() const override;
-  std::string val;
+  Symbol val;
 };
 
 struct NumberLiteral : public Expr {

@@ -1,15 +1,25 @@
 #pragma once
 
 #include <Interfaces.h>
+#include <Ir.h>
 #include <SymbolTable.h>
 
 #include <cassert>
 
 namespace descartes {
 
-struct FunctionType {
-  FunctionType(const Function *function, const Type *returnType,
-               std::vector<const Type *> &&argTypes);
+// TODO: Consider making an `Environment<T>` type.
+// We shouldn't need to know about IR data here.
+struct VarEntry {
+  VarEntry(const Type *varType, ir::Access access)
+      : varType(varType), access(access) {}
+  const Type *varType;
+  ir::Access access;
+};
+
+struct FunctionEntry {
+  FunctionEntry(const Function *function, const Type *returnType,
+                std::vector<const Type *> &&argTypes);
   const Function *function;
   const Type *returnType;
   const std::vector<const Type *> argTypes;
@@ -23,17 +33,17 @@ public:
   // TODO: Use a RAII type for this when we begin using exceptions.
   void enterScope();
   void exitScope();
-  bool setVarType(Symbol name, const Type *type);
-  bool setFunctionType(Symbol name, FunctionType &&function);
+  bool setVarType(Symbol name, VarEntry var);
+  bool setFunctionType(Symbol name, FunctionEntry &&function);
   bool setResolvedType(Symbol name, const Type *type);
-  const Type *getVarType(Symbol name) const;
-  const FunctionType *getFunctionType(Symbol name) const;
+  const VarEntry *getVarType(Symbol name) const;
+  const FunctionEntry *getFunctionType(Symbol name) const;
   const Type *getResolvedType(Symbol name) const;
 
 private:
   struct Scope {
-    std::unordered_map<Symbol, const Type *, SymbolHash> varTypes;
-    std::unordered_map<Symbol, const FunctionType, SymbolHash> functionTypes;
+    std::unordered_map<Symbol, const VarEntry, SymbolHash> varEntries;
+    std::unordered_map<Symbol, const FunctionEntry, SymbolHash> functionEntries;
     std::unordered_map<Symbol, const Type *, SymbolHash> resolvedTypes;
   };
   std::vector<Scope> scopes;
