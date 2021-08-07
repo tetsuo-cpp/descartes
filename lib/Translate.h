@@ -8,6 +8,13 @@ class Translate {
 public:
   explicit Translate(SymbolTable &symbols);
   virtual ~Translate() = default;
+  ir::StatementPtr makeMove(ir::ExprPtr &&lhs, ir::ExprPtr &&rhs);
+  ir::StatementPtr makeSequence(std::vector<ir::StatementPtr> &&body);
+  ir::StatementPtr makeIf(ir::ExprPtr &&condExpr,
+                          ir::StatementPtr &&thenStatement,
+                          ir::StatementPtr &&elseStatement);
+  ir::StatementPtr makeWhile(ir::ExprPtr &&condExpr, ir::StatementPtr &&body);
+  ir::StatementPtr makeCallStatement(ir::ExprPtr &&callExpr) const;
   ir::ExprPtr makeName(const StringLiteral &stringLiteral) const;
   ir::ExprPtr makeConst(const NumberLiteral &numberLiteral) const;
   ir::ExprPtr makeVarRef(const VarRef &varRef) const;

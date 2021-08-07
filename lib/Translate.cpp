@@ -42,6 +42,95 @@ ir::RelOpKind binOpKindToRelOpKind(BinaryOpKind kind) {
 
 Translate::Translate(SymbolTable &symbols) : symbols(symbols), labelCount(0) {}
 
+ir::StatementPtr Translate::makeMove(ir::ExprPtr &&lhs, ir::ExprPtr &&rhs) {
+  return std::make_unique<ir::Move>(std::move(lhs), std::move(rhs));
+}
+
+ir::StatementPtr Translate::makeSequence(std::vector<ir::StatementPtr> &&body) {
+  return std::make_unique<ir::Sequence>(std::move(body));
+}
+
+ir::StatementPtr Translate::makeIf(ir::ExprPtr &&condExpr,
+                                   ir::StatementPtr &&thenStatement,
+                                   ir::StatementPtr &&elseStatement) {
+  // TODO: Refactor to avoid repetition.
+  // This means we've got a nested conditional jump here.
+  if (condExpr->getKind() == ir::ExprKind::CondExpr) {
+    auto *condExprPtr = static_cast<ir::CondExpr *>(condExpr.get());
+    auto *condJumpPtr =
+        static_cast<ir::CondJump *>(condExprPtr->condJump.get());
+    assert(condJumpPtr);
+    // Save the then and else labels.
+    std::vector<ir::StatementPtr> seq;
+    seq.push_back(std::move(condExprPtr->condJump));
+    seq.push_back(std::make_unique<ir::Label>(condJumpPtr->thenLabel));
+    seq.push_back(std::move(thenStatement));
+    // Else statement is optional.
+    if (elseStatement) {
+      seq.push_back(std::make_unique<ir::Label>(condJumpPtr->elseLabel));
+      seq.push_back(std::move(elseStatement));
+    }
+    return makeSequence(std::move(seq));
+  }
+  // Otherwise it's something else that resolves to a boolean such as a variable
+  // or function call.
+  Symbol thenLabel = makeLabel(), elseLabel = makeLabel();
+  auto cond = std::make_unique<ir::CondJump>(
+      ir::RelOpKind::Equal, std::move(condExpr), std::make_unique<ir::Const>(1),
+      thenLabel, elseLabel);
+  std::vector<ir::StatementPtr> seq;
+  seq.push_back(std::move(cond));
+  seq.push_back(std::make_unique<ir::Label>(thenLabel));
+  seq.push_back(std::move(thenStatement));
+  if (elseStatement) {
+    // TODO: Make labels optional for conditionals in the IR.
+    //
+    // We need a proper way of saying that we don't intend to jump to an `else`
+    // block.
+    seq.push_back(std::make_unique<ir::Label>(elseLabel));
+    seq.push_back(std::move(elseStatement));
+  }
+  return makeSequence(std::move(seq));
+}
+
+ir::StatementPtr Translate::makeWhile(ir::ExprPtr &&condExpr,
+                                      ir::StatementPtr &&body) {
+  if (condExpr->getKind() == ir::ExprKind::CondExpr) {
+    auto *condExprPtr = static_cast<ir::CondExpr *>(condExpr.get());
+    auto *condJumpPtr =
+        static_cast<ir::CondJump *>(condExprPtr->condJump.get());
+    assert(condJumpPtr);
+    const Symbol condLabel = makeLabel();
+    std::vector<ir::StatementPtr> seq;
+    seq.push_back(std::make_unique<ir::Label>(condLabel));
+    seq.push_back(std::move(condExprPtr->condJump));
+    seq.push_back(std::make_unique<ir::Label>(condJumpPtr->thenLabel));
+    seq.push_back(std::move(body));
+    seq.push_back(std::make_unique<ir::Jump>(condLabel));
+    seq.push_back(std::make_unique<ir::Label>(condJumpPtr->elseLabel));
+    return makeSequence(std::move(seq));
+  }
+  // Otherwise it's something else that resolves to a boolean such as a variable
+  // function or call.
+  const Symbol thenLabel = makeLabel(), elseLabel = makeLabel(),
+               condLabel = makeLabel();
+  auto cond = std::make_unique<ir::CondJump>(
+      ir::RelOpKind::Equal, std::move(condExpr), std::make_unique<ir::Const>(1),
+      thenLabel, elseLabel);
+  std::vector<ir::StatementPtr> seq;
+  seq.push_back(std::make_unique<ir::Label>(condLabel));
+  seq.push_back(std::move(cond));
+  seq.push_back(std::make_unique<ir::Label>(cond->thenLabel));
+  seq.push_back(std::move(body));
+  seq.push_back(std::make_unique<ir::Jump>(condLabel));
+  seq.push_back(std::make_unique<ir::Label>(cond->elseLabel));
+  return makeSequence(std::move(seq));
+}
+
+ir::StatementPtr Translate::makeCallStatement(ir::ExprPtr &&callExpr) const {
+  return std::make_unique<ir::CallStatement>(std::move(callExpr));
+}
+
 ir::ExprPtr Translate::makeName(const StringLiteral &stringLiteral) const {
   return std::make_unique<ir::Name>(stringLiteral.val);
 }

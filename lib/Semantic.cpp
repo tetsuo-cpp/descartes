@@ -109,80 +109,88 @@ void Semantic::analyseBlockStatements(Statement &statement) {
     analyseStatement(*s);
 }
 
-void Semantic::analyseStatement(Statement &statement) {
+ir::StatementPtr Semantic::analyseStatement(Statement &statement) {
   switch (statement.getKind()) {
   case StatementKind::Assignment:
-    analyseAssignment(statement);
-    break;
+    return analyseAssignment(statement);
   case StatementKind::Compound:
-    analyseCompound(statement);
-    break;
+    return analyseCompound(statement);
   case StatementKind::If:
-    analyseIf(statement);
-    break;
+    return analyseIf(statement);
   case StatementKind::Case:
-    analyseCase(statement);
-    break;
+    return analyseCase(statement);
   case StatementKind::While:
-    analyseWhile(statement);
-    break;
+    return analyseWhile(statement);
   case StatementKind::Call:
-    analyseCallStatement(statement);
-    break;
+    return analyseCallStatement(statement);
   default:
-    assert(!"Unsupported statement kind");
+    throw SemanticError("Unsupported statement kind");
   }
 }
 
-void Semantic::analyseAssignment(Statement &statement) {
+ir::StatementPtr Semantic::analyseAssignment(Statement &statement) {
   // TODO: Handle const.
   auto *assignment = statementCast<Assignment *>(statement);
   assert(assignment);
-  const auto lhs = analyseExpr(*assignment->lhs),
-             rhs = analyseExpr(*assignment->rhs);
+  auto lhs = analyseExpr(*assignment->lhs), rhs = analyseExpr(*assignment->rhs);
   if (!isCompatibleType(lhs.second, rhs.second))
     throw SemanticError("Assignment error");
+  auto moveVal = translate.makeMove(std::move(lhs.first), std::move(rhs.first));
+  return moveVal;
 }
 
-void Semantic::analyseCompound(Statement &statement) {
+ir::StatementPtr Semantic::analyseCompound(Statement &statement) {
   auto *compound = statementCast<Compound *>(statement);
   assert(compound);
+  std::vector<ir::StatementPtr> body;
   for (const auto &s : compound->body)
-    analyseStatement(*s);
+    body.push_back(analyseStatement(*s));
+  return translate.makeSequence(std::move(body));
 }
 
-void Semantic::analyseIf(Statement &statement) {
+ir::StatementPtr Semantic::analyseIf(Statement &statement) {
   auto *ifStatement = statementCast<If *>(statement);
   assert(ifStatement);
-  const auto condType = analyseExpr(*ifStatement->cond);
+  auto condType = analyseExpr(*ifStatement->cond);
   if (condType.second->getKind() != TypeKind::Boolean)
     throw SemanticError("If condition must be boolean");
-  analyseStatement(*ifStatement->thenStatement);
+  // Check whether we're checking a boolean value or return value OR there's a
+  // relational check here.
+  auto &condVal = condType.first;
+  ir::StatementPtr thenVal = analyseStatement(*ifStatement->thenStatement),
+                   elseVal;
   if (ifStatement->elseStatement)
-    analyseStatement(*ifStatement->elseStatement);
+    elseVal = analyseStatement(*ifStatement->elseStatement);
+  return translate.makeIf(std::move(condVal), std::move(thenVal),
+                          std::move(elseVal));
 }
 
-void Semantic::analyseCase(Statement &statement) {
+ir::StatementPtr Semantic::analyseCase(Statement &statement) {
   // TODO: Implement case statements.
   static_cast<void>(statement);
+  throw SemanticError("Case statements not implemented");
 }
 
-void Semantic::analyseWhile(Statement &statement) {
+ir::StatementPtr Semantic::analyseWhile(Statement &statement) {
   auto *whileStatement = statementCast<While *>(statement);
   assert(whileStatement);
-  const auto condType = analyseExpr(*whileStatement->cond);
+  auto condType = analyseExpr(*whileStatement->cond);
   if (condType.second->getKind() != TypeKind::Boolean)
     throw SemanticError("While condition must be a boolean");
-  analyseStatement(*whileStatement->body);
+  auto bodyVal = analyseStatement(*whileStatement->body);
+  auto whileVal =
+      translate.makeWhile(std::move(condType.first), std::move(bodyVal));
+  return whileVal;
 }
 
-void Semantic::analyseCallStatement(Statement &statement) {
+ir::StatementPtr Semantic::analyseCallStatement(Statement &statement) {
   auto *callStatement = statementCast<CallStatement *>(statement);
   assert(callStatement);
   auto *call = exprCast<Call *>(*callStatement->call);
   if (!call)
     throw SemanticError("Call statement with a non-call node within");
-  analyseExpr(*call);
+  auto callVal = analyseExpr(*call);
+  return translate.makeCallStatement(std::move(callVal.first));
 }
 
 Semantic::ExprResult Semantic::analyseExpr(Expr &expr) {
@@ -200,7 +208,7 @@ Semantic::ExprResult Semantic::analyseExpr(Expr &expr) {
   case ExprKind::MemberRef:
     return analyseMemberRef(expr);
   }
-  return {nullptr, nullptr};
+  throw SemanticError("Unknown expr type");
 }
 
 Semantic::ExprResult Semantic::analyseStringLiteral(Expr &expr) {

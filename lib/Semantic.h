@@ -21,13 +21,13 @@ private:
   void
   analyseFunctions(const std::vector<std::unique_ptr<Function>> &functions);
   void analyseBlockStatements(Statement &statement);
-  void analyseStatement(Statement &statement);
-  void analyseAssignment(Statement &statement);
-  void analyseCompound(Statement &statement);
-  void analyseIf(Statement &statement);
-  void analyseCase(Statement &statement);
-  void analyseWhile(Statement &statement);
-  void analyseCallStatement(Statement &statement);
+  ir::StatementPtr analyseStatement(Statement &statement);
+  ir::StatementPtr analyseAssignment(Statement &statement);
+  ir::StatementPtr analyseCompound(Statement &statement);
+  ir::StatementPtr analyseIf(Statement &statement);
+  ir::StatementPtr analyseCase(Statement &statement);
+  ir::StatementPtr analyseWhile(Statement &statement);
+  ir::StatementPtr analyseCallStatement(Statement &statement);
   using ExprResult = std::pair<ir::ExprPtr, const Type *>;
   ExprResult analyseExpr(Expr &expr);
   ExprResult analyseStringLiteral(Expr &expr);
