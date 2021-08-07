@@ -335,7 +335,7 @@ Semantic::ExprResult Semantic::analyseMemberRef(Expr &expr) {
       if (!memberType)
         // Maybe do this eagerly instead of waiting for a member access?
         throw SemanticError("Member of unknown type");
-      // TODO: Do this when I figure out accesses for normal variables.
+      // TODO: Implement IR generation for records.
       return {nullptr, memberType};
     }
   }
