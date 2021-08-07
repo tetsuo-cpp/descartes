@@ -243,8 +243,8 @@ Semantic::ExprResult Semantic::analyseVarRef(Expr &expr) {
   const auto *varType = env.getVarType(varRef->identifier);
   if (!varType)
     throw SemanticError("Referencing unknown variable");
-  // TODO: Add accesses to env.
-  return {nullptr, nullptr};
+  auto varRefVal = translate.makeVarRef(varType->access);
+  return {std::move(varRefVal), varType->varType};
 }
 
 Semantic::ExprResult Semantic::analyseBinaryOp(Expr &expr) {

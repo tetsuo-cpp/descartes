@@ -17,7 +17,7 @@ public:
   ir::StatementPtr makeCallStatement(ir::ExprPtr &&callExpr) const;
   ir::ExprPtr makeName(const StringLiteral &stringLiteral) const;
   ir::ExprPtr makeConst(const NumberLiteral &numberLiteral) const;
-  ir::ExprPtr makeVarRef(const VarRef &varRef) const;
+  ir::ExprPtr makeVarRef(ir::Access access) const;
   ir::ExprPtr makeArithOp(BinaryOpKind kind, ir::ExprPtr lhs,
                           ir::ExprPtr rhs) const;
   ir::ExprPtr makeCondJump(BinaryOpKind kind, ir::ExprPtr lhs, ir::ExprPtr rhs);
@@ -29,6 +29,7 @@ public:
 
 private:
   Symbol makeLabel();
+  ir::ExprPtr getCurrentFramePointer() const;
   SymbolTable &symbols;
   std::vector<ir::Fragment> frags;
   std::vector<std::unique_ptr<ir::Level>> levels;

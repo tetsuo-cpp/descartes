@@ -141,6 +141,30 @@ ir::ExprPtr Translate::makeConst(const NumberLiteral &numberLiteral) const {
   return std::make_unique<ir::Const>(numberLiteral.val);
 }
 
+ir::ExprPtr Translate::makeVarRef(ir::Access access) const {
+  // We should be checking from the current frame onwards.
+  ir::ExprPtr frameAddr = getCurrentFramePointer();
+  for (auto levelIt = levels.rbegin(); levelIt != levels.rend(); ++levelIt) {
+    const auto &currentLevel = *levelIt;
+    if (currentLevel.get() == access.level) {
+      // The memory address is the offset from the frame pointer.
+      auto memAddress = std::make_unique<ir::ArithOp>(
+          ir::ArithOpKind::Add, std::move(frameAddr),
+          std::make_unique<ir::Const>(access.offset));
+      return std::make_unique<ir::Mem>(std::move(memAddress));
+    } else {
+      // Since it's not in the current frame, we need to read the first arg
+      // (static link) and get the address of the parent frame.
+      const ir::Access staticLink = currentLevel->locals.front();
+      auto frameMem = std::make_unique<ir::ArithOp>(
+          ir::ArithOpKind::Add, std::move(frameAddr),
+          std::make_unique<ir::Const>(staticLink.offset));
+      frameAddr = std::make_unique<ir::Mem>(std::move(frameMem));
+    }
+  }
+  throw SemanticError("Could not find frame owning access");
+}
+
 ir::ExprPtr Translate::makeArithOp(BinaryOpKind kind, ir::ExprPtr lhs,
                                    ir::ExprPtr rhs) const {
   const ir::ArithOpKind k = binOpKindToArithOpKind(kind);
@@ -175,6 +199,11 @@ ir::Level *Translate::getCurrentLevel() { return levels.back().get(); }
 Symbol Translate::makeLabel() {
   const std::string labelName = "L" + std::to_string(labelCount++);
   return symbols.make(labelName);
+}
+
+ir::ExprPtr Translate::getCurrentFramePointer() const {
+  // TODO: Get current frame pointer for each arch.
+  return nullptr;
 }
 
 } // namespace descartes
